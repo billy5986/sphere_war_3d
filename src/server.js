@@ -127,8 +127,8 @@ setInterval(() => {
             p.z += input.dz * speed;
 
             // 地圖邊界限制
-            p.x = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.x));
-            p.z = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.z));
+            //p.x = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.x));
+            //p.z = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.z));
 
             // Y 軸物理：重力
             p.vy -= 1.5; // 重力加速度
@@ -163,7 +163,7 @@ setInterval(() => {
             }
         }
 
-        // 3. 判定：大球吃小球
+        // 3. 判定：大球撞小球 (推力取代直接吃掉)
         let playerIds = Object.keys(players);
         for (let i = 0; i < playerIds.length; i++) {
             for (let j = i + 1; j < playerIds.length; j++) {
@@ -172,24 +172,33 @@ setInterval(() => {
                 if (!p1 || !p2) continue;
 
                 let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-                
-                // 發生碰撞
                 if (dist < p1.radius + p2.radius) {
-                    if (p1.radius > p2.radius * 1.2) {
-                        p1.radius += p2.radius * 0.5;
-                        io.to(playerIds[j]).emit('you_lost', '你被吃掉了！');
-                        
-                        // 釋放被吃掉玩家的顏色
-                        room.usedColors = room.usedColors.filter(c => c !== p2.color);
-                        delete players[playerIds[j]];
-                    } else if (p2.radius > p1.radius * 1.2) {
-                        p2.radius += p1.radius * 0.5;
-                        io.to(playerIds[i]).emit('you_lost', '你被吃掉了！');
-                        
-                        room.usedColors = room.usedColors.filter(c => c !== p1.color);
-                        delete players[playerIds[i]];
+                    let angle = Math.atan2(p1.z - p2.z, p1.x - p2.x);
+                    let force = 30; // 撞擊力道
+                    
+                    if (p1.radius > p2.radius * 1.1) {
+                        p2.x += Math.cos(angle) * force;
+                        p2.z += Math.sin(angle) * force;
+                    } else if (p2.radius > p1.radius * 1.1) {
+                        p1.x -= Math.cos(angle) * force;
+                        p1.z -= Math.sin(angle) * force;
                     }
                 }
+            }
+        }
+
+        // 4. 邊界檢查與重生 (加在廣播之前)
+        for (let id in players) {
+            let p = players[id];
+            if (Math.abs(p.x) > WORLD_SIZE || Math.abs(p.z) > WORLD_SIZE) {
+                io.to(id).emit('you_lost', '你被撞出場外了！重新開始中...');
+                
+                // 重置狀態
+                p.x = (Math.random() - 0.5) * 200;
+                p.z = (Math.random() - 0.5) * 200;
+                p.y = 20; 
+                p.vy = 0;
+                p.radius = 20; // 回復最小體型
             }
         }
 

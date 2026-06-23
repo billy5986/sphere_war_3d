@@ -56,6 +56,24 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 2.5 預先檢查名稱與顏色是否可用 (點擊下一步時觸發)
+    socket.on('check_availability', (data) => {
+        const roomId = data.roomId;
+        
+        if (!rooms[roomId]) {
+            return socket.emit('check_result', { valid: false, msg: '房間已不存在' });
+        }
+        if (rooms[roomId].usedColors.includes(data.color)) {
+            return socket.emit('check_result', { valid: false, msg: '這個顏色已經被選走了，請換一個！' });
+        }
+        if (rooms[roomId].usedNames.includes(data.name)) {
+            return socket.emit('check_result', { valid: false, msg: '這個名稱已經有人使用了，請換一個！' });
+        }
+        
+        // 檢查通過
+        socket.emit('check_result', { valid: true });
+    });
+    
     // 3. 選擇顏色、名稱並進入戰場
     socket.on('join_game', (data) => {
         const roomId = data.roomId;

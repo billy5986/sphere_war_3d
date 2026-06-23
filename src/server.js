@@ -147,13 +147,6 @@ setInterval(() => {
             }
         }
 
-            // 跳躍判定
-            if (input.jump && isGrounded) {
-                p.vy = 25; // 給予向上的速度
-                input.jump = false; // 消耗掉跳躍指令
-            }
-        }
-
         // 2. 判定：玩家吃光點 (3D 距離判斷)
         for (let id in players) {
             let p = players[id];

@@ -1,0 +1,23 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # 💡 注意：如果你的 GitHub 主要分支叫 master，請把 main 改成 master
+
+# 關鍵設定：必須允許 GitHub 機器人有寫入權限，它才能幫你建立網頁分支
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public  # 👈 核心指令！告訴機器人去抓 public 裡面的 index.html

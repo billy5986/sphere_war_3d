@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sphere War 3D</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050914; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* 連線狀態標籤 */
+        #connection-status {
+            position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 10px;
+            font-size: 0.85rem; font-weight: 600; color: #e2e8f0; background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 10px 18px; border-radius: 30px; z-index: 20; border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #dee2e6; transition: all 0.3s; }
+        .status-dot.connected { background-color: #10b981; box-shadow: 0 0 12px #10b981; }
+        .status-dot.connecting { background-color: #f59e0b; box-shadow: 0 0 12px #f59e0b; animation: pulse 1.5s infinite; }
+        .status-dot.disconnected { background-color: #ef4444; box-shadow: 0 0 12px #ef4444; }
+
+        @keyframes pulse { 0% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.4; transform: scale(0.8); } }
+
+        /* UI 覆蓋層 (加入科技感網格背景) */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: 
+                radial-gradient(circle at center, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.95) 100%),
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            z-index: 10; color: white; transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 頂級玻璃透視 Panel */
+        .panel {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            padding: 45px; border-radius: 32px; text-align: center; width: 420px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            max-height: 90vh; overflow-y: auto; position: relative;
+        }
+        .panel::-webkit-scrollbar { width: 6px; }
+        .panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        .game-title {
+            margin-top: 0; font-size: 3.2rem; letter-spacing: 4px; font-weight: 900; text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 5px; text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+        }
+        .game-subtitle {
+            color: #94a3b8; font-size: 0.95rem; letter-spacing: 6px; text-transform: uppercase; font-weight: 700;
+            margin-bottom: 30px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 全新選項卡片設計 */
+        .menu-grid { display: flex; flex-direction: column; gap: 16px; }
+        
+        .menu-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px; padding: 22px; text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .menu-card:hover {
+            background: rgba(255, 255, 255, 0.05); transform: translateY(-3px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4), 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+        /* 卡片流光效果 */
+        .menu-card::before { 
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent);
+            transform: skewX(-25deg); transition: 0.6s; z-index: 1; pointer-events: none;
+        }
+        .menu-card:hover::before { left: 200%; }
+
+        .menu-card h3 { margin: 0 0 8px 0; font-size: 1.25rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 8px; position: relative; z-index: 2; }
+        .menu-card p { margin: 0 0 16px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; position: relative; z-index: 2; }
+        .recommend-text { color: #facc15; font-size: 0.8rem; font-weight: 600; display: block; margin-top: 6px; }
+
+        .divider { 
+            display: flex; align-items: center; text-align: center; color: #475569; 
+            font-size: 0.8rem; margin: 25px 0; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; 
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .divider::before { margin-right: 1em; } .divider::after { margin-left: 1em; }
+
+        /* 輸入框與組合 */
+        input[type="text"], select {
+            width: 100%; padding: 14px 18px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px; font-size: 1.05rem; text-align: center; box-sizing: border-box; outline: none;
+            background: rgba(0, 0, 0, 0.4); color: white; transition: all 0.3s; font-weight: 600; letter-spacing: 1px;
+            position: relative; z-index: 2;
+        }
+        input[type="text"]:focus, select:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15); background: rgba(0,0,0,0.6); }
+        select option { background: #0f172a; }
+
+        .input-group { display: flex; gap: 10px; position: relative; z-index: 2; }
+        .input-group input { margin-bottom: 0; flex: 1; text-align: left; }
+        .input-group button { width: auto; margin-bottom: 0; padding: 0 24px; border-radius: 14px; white-space: nowrap; }
+
+        input[type="color"] {
+            width: 100%; height: 55px; border: none; border-radius: 14px; cursor: pointer;
+            margin-bottom: 25px; background: none; outline: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 2px solid rgba(255, 255, 255, 0.15); border-radius: 12px; transition: border 0.3s; }
+        input[type="color"]:hover::-webkit-color-swatch { border-color: #38bdf8; }
+
+        /* 按鈕設計 */
+        button {
+            width: 100%; padding: 15px; border: none; border-radius: 14px; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); color: white; letter-spacing: 1px;
+            position: relative; z-index: 2;
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); }
+        button:active:not(:disabled) { transform: translateY(1px); }
+        
+        button.primary { background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3); }
+        button.primary:hover:not(:disabled) { box-shadow: 0 8px 25px rgba(14, 165, 233, 0.5); }
+        
+        button.secondary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3); }
+        button.secondary:hover:not(:disabled) { box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5); }
+        
+        button.success { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3); }
+        button.success:hover:not(:disabled) { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+        
+        button.danger { background: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3); }
+        button.danger:hover:not(:disabled) { box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5); }
+
+        button:disabled { background: #334155; color: #64748b; box-shadow: none; cursor: not-allowed; }
+
+        .hidden { display: none !important; }
+
+        /* 左上角設定按鈕 */
+        #settings-btn {
+            position: absolute; top: 25px; left: 25px; background: transparent; border: none;
+            cursor: pointer; display: none; font-size: 2.2rem; text-align: center;
+            z-index: 20; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5); user-select: none;
+        }
+        #settings-btn:hover { transform: scale(1.15) rotate(90deg); } /* 齒輪旋轉特效 */
+
+        /* 遊戲內設定選單覆蓋層 */
+        #settings-overlay {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 6, 23, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #settings-overlay.active { opacity: 1; pointer-events: auto; }
+
+        input[type="range"] { width: 100%; margin: 10px 0 25px 0; cursor: pointer; accent-color: #38bdf8; height: 6px; border-radius: 3px; }
+        .control-label { text-align: left; margin-bottom: 8px; color: #cbd5e1; font-size: 0.95rem; font-weight: 600; display: flex; justify-content: space-between; }
+
+        /* 排行榜 */
+        #leaderboard {
+            position: absolute; top: 80px; right: 20px;
+            background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+            padding: 18px; color: white; width: 200px; z-index: 15;
+            display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        #leaderboard h3 {
+            margin: 0 0 12px 0; font-size: 1.05rem; text-align: center;
+            color: #38bdf8; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .leaderboard-item {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px; font-size: 0.95rem; font-weight: 600; padding: 4px 6px; border-radius: 8px; transition: background 0.2s;
+        }
+        .player-info { display: flex; align-items: center; gap: 8px; }
+        .player-color-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.8); display: inline-block;
+        }
+        .player-score { color: #fcd34d; font-weight: bold; font-family: 'Courier New', monospace; font-size: 1.1rem; }
+
+        /* 準星 */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 8px; height: 8px; background: rgba(255,255,255,0.9); border-radius: 50%;
+            z-index: 5; pointer-events: none; display: none; box-shadow: 0 0 8px rgba(0,0,0,0.8);
+        }
+
+        #instruction { 
+            position: absolute; top: 30px; width: 100%; text-align: center; color: white; z-index: 5; 
+            text-shadow: 0 2px 5px rgba(0,0,0,0.9); pointer-events: none; transition: all 0.3s ease;
+            font-weight: 600; font-size: 1.05rem; letter-spacing: 1px;
+        }
+
+        /* 玩家頭頂名稱標籤容器 */
+        #name-tags-container {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; overflow: hidden; z-index: 4; display: none;
+        }
+        
+        .name-tag {
+            position: absolute; color: white; background: rgba(15, 23, 42, 0.6);
+            padding: 4px 10px; border-radius: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+            transform: translate(-50%, -50%); 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8); transition: opacity 0.1s;
+            border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="connection-status">
+        <span id="status-light" class="status-dot connecting"></span>
+        <span id="status-text">連線中...</span>
+    </div>
+
+    <div id="settings-btn" title="設定 (ESC)">⚙️</div>
+
+    <div id="leaderboard">
+        <h3>🏆 排行榜</h3>
+        <div id="leaderboard-list"></div>
+    </div>
+
+    <div id="name-tags-container"></div>
+
+    <div id="crosshair"></div>
+    <div id="instruction" class="hidden">點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | 滑鼠 旋轉視角</div>
+
+    <div id="ui-layer">
+        <!-- 主選單 -->
+        <div id="main-menu-panel" class="panel">
+            <div>
+                <h1 class="game-title">Sphere War</h1>
+                <div class="game-subtitle">3D Arena Survival</div>
+            </div>
+
+            <div class="menu-grid">
+                <!-- 多人模式入口 -->
+                <div class="menu-card">
+                    <h3>🌐 多人連線模式</h3>
+                    <p>建立專屬房間或加入朋友的戰局，與真人較量。</p>
+                    <button id="btn-show-multiplayer" class="primary">進入多人模式</button>
+                </div>
+
+                <!-- 單人模式入口 -->
+                <div class="menu-card">
+                    <h3>💻 單人離線模式</h3>
+                    <p>離線與 AI 機器人進行大亂鬥，鍛鍊你的技巧。</p>
+                    <button id="btn-show-singleplayer" class="success">進入單人模式</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 多人模式選單 -->
+        <div id="multiplayer-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">多人連線</h1>
+            <div class="game-subtitle" style="margin-bottom: 15px;">Multiplayer</div>
+            <div class="recommend-badge" style="margin-bottom: 20px; padding: 4px 12px; font-size: 0.8rem;">💡 推薦 10 人以下最佳體驗</div>
+
+            <div class="menu-grid">
+                <!-- 創建戰場 -->
+                <div class="menu-card" style="padding: 18px;">
+                    <h3 style="font-size: 1.15rem;">建立戰場</h3>
+                    <p style="font-size: 0.85rem; margin-bottom: 12px;">開啟專屬的連線房間，邀請朋友一起遊玩。</p>
+                    <button id="btn-create-room" class="primary" disabled style="padding: 10px;">創建房間</button>
+                </div>
+
+                <!-- 加入戰場 -->
+                <div class="menu-card" style="padding: 18px;">
+                    <h3 style="font-size: 1.15rem;">加入戰場</h3>
+                    <p style="font-size: 0.85rem; margin-bottom: 12px;">輸入朋友提供的 6 碼代碼，立刻加入戰局。</p>
+                    <div class="input-group">
+                        <input type="text" id="room-input" placeholder="輸入代碼" maxlength="6" style="padding: 10px; font-size: 1rem;">
+                        <button id="btn-join-room" class="secondary" disabled style="padding: 10px 18px;">加入</button>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="btn-mp-back" class="danger" style="margin-top: 15px; padding: 12px;">返回主選單</button>
+        </div>
+
+        <!-- 單人模式設定 -->
+        <div id="sp-config-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">單人設定</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Local Arena</div>
+            
+            <div class="control-label">玩家暱稱</div>
+            <input type="text" id="sp-name-input" placeholder="輸入名稱 (1-8字)" maxlength="8" value="玩家1號">
+            
+            <div class="control-label">代表顏色</div>
+            <input type="color" id="sp-color-input" value="#38bdf8">
+            
+            <div class="divider">遊戲參數</div>
+
+            <div class="control-label"><span>NPC 數量</span><span id="npc-count-val">15</span></div>
+            <input type="range" id="npc-count-slider" min="1" max="50" value="15">
+            
+            <div class="control-label">NPC 難度 (AI)</div>
+            <select id="npc-difficulty-select">
+                <option value="1">簡單 (隨機漫步)</option>
+                <option value="2" selected>普通 (主動找食物)</option>
+                <option value="3">困難 (會躲避大球、追擊小球)</option>
+            </select>
+            
+            <div class="menu-grid" style="margin-top: 15px;">
+                <button id="btn-sp-start" class="success">準備完畢</button>
+                <button id="btn-sp-back" class="danger">返回主選單</button>
+            </div>
+        </div>
+
+        <!-- 多人模式名稱與顏色選擇 -->
+        <div id="color-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">選擇外觀</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Customize</div>
+
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 25px;">
+                <p id="room-id-display" style="font-size: 1.1rem; color: #94a3b8; font-weight: 700; margin: 0;">房間代碼: </p>
+                <button id="btn-copy-room" style="width: auto; padding: 6px 14px; margin: 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: none; border-radius: 8px; font-size: 0.85rem; color: #e2e8f0;">📋 複製</button>
+            </div>
+            
+            <div class="control-label">玩家暱稱</div>
+            <input type="text" id="name-input" placeholder="輸入名稱 (1-8字)" maxlength="8">
+            
+            <div class="control-label">代表顏色</div>
+            <input type="color" id="color-input" value="#f43f5e">
+            
+            <button id="btn-start-game" class="primary" style="margin-top: 10px;">下一步</button>
+        </div>
+
+        <!-- 玩法講解 -->
+        <div id="tutorial-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">玩法介紹</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">How to play</div>
+
+            <div class="menu-card" style="margin-bottom: 25px;">
+                <h3 style="color: #38bdf8;">🎯 目標與規則</h3>
+                <p>🟢 <b>成長：</b>收集地上的白色光點讓自己變大。<br>
+                   💥 <b>碰撞：</b>體型大於對手 10% 即可將其撞飛！<br>
+                   ☠️ <b>出界：</b>掉出邊界會變回最小體型並重新掉落。</p>
+                
+                <div class="divider" style="margin: 15px 0;">操作</div>
+                
+                <h3 style="color: #38bdf8;">🎮 操作方式</h3>
+                <p style="margin-bottom: 0;">🖱️ <b>滑鼠：</b>視角控制 &nbsp;|&nbsp; ⌨️ <b>W A S D：</b>移動<br>
+                   🚀 <b>空白鍵：</b>跳躍 &nbsp;|&nbsp; ⚙️ <b>ESC：</b>開啟設定</p>
+            </div>
+            <button id="btn-confirm-start" class="success">我準備好了！</button>
+        </div>
+    </div>
+
+    <!-- 遊戲內設定選單 -->
+    <div id="settings-overlay">
+        <div class="panel">
+            <h2 class="game-title" style="font-size: 2.2rem; margin-bottom: 10px;">設定</h2>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Settings</div>
+            
+            <div class="menu-card" style="margin-bottom: 25px;">
+                <div class="control-label">滑鼠靈敏度: <span id="sensitivity-value">50</span>%</div>
+                <input type="range" id="sensitivity-slider" min="1" max="100" value="50">
+            </div>
+
+            <div class="menu-grid">
+                <button id="btn-resume-game" class="primary">繼續遊戲</button>
+                <button id="btn-leave-game" class="danger">退出戰場</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // --- 1. DOM 與基礎設定 ---
+        const backendUrl = 'https://sphere-war.onrender.com';
+        const socket = io(backendUrl, { autoConnect: true });
+        
+        const uiLayer = document.getElementById('ui-layer');
+        const mainMenuPanel = document.getElementById('main-menu-panel');
+        const multiplayerPanel = document.getElementById('multiplayer-panel');
+        const colorPanel = document.getElementById('color-panel');
+        const spConfigPanel = document.getElementById('sp-config-panel');
+        const tutorialPanel = document.getElementById('tutorial-panel');
+        
+        const roomIdDisplay = document.getElementById('room-id-display');
+        const btnCopyRoom = document.getElementById('btn-copy-room');
+        const crosshair = document.getElementById('crosshair');
+        const instruction = document.getElementById('instruction');
+        const statusLight = document.getElementById('status-light');
+        const statusText = document.getElementById('status-text');
+        const nameTagsContainer = document.getElementById('name-tags-container');
+        
+        const btnCreateRoom = document.getElementById('btn-create-room');
+        const btnJoinRoom = document.getElementById('btn-join-room');
+        const btnShowSinglePlayer = document.getElementById('btn-show-singleplayer');
+        const btnShowMultiplayer = document.getElementById('btn-show-multiplayer');
+
+        // 設定選單 DOM
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const btnResumeGame = document.getElementById('btn-resume-game');
+        const btnLeaveGame = document.getElementById('btn-leave-game');
+        const sensitivitySlider = document.getElementById('sensitivity-slider');
+        const sensitivityValue = document.getElementById('sensitivity-value');
+        
+        let mouseSensitivityMultiplier = 1.0; 
+        const baseSensitivity = 0.002;        
+
+        // 隨機預設顏色
+        document.getElementById('color-input').value = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        document.getElementById('sp-color-input').value = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+        let currentRoom = null;
+        let myId = null;
+        let isPlaying = false;
+        
+        // 單人模式變數
+        let isSinglePlayer = false;
+        let spGameLoopInterval = null;
+        let localGameState = { players: {}, pellets: [] };
+        const WORLD_SIZE = 800;
+
+        // --- Socket 連線狀態監聽 ---
+        socket.on('connect', () => {
+            myId = socket.id;
+            updateStatus('connected', '伺服器已連線');
+            btnCreateRoom.disabled = false;
+            btnJoinRoom.disabled = false;
+        });
+
+        socket.on('connect_error', () => {
+            updateStatus('disconnected', '伺服器離線 (可玩單人)');
+            btnCreateRoom.disabled = true;
+            btnJoinRoom.disabled = true;
+        });
+
+        socket.on('disconnect', () => {
+            updateStatus('disconnected', '已斷線');
+            btnCreateRoom.disabled = true;
+            btnJoinRoom.disabled = true;
+            if (isPlaying && !isSinglePlayer) {
+                alert('與伺服器失去連線！');
+                window.location.reload();
+            }
+        });
+
+        function updateStatus(stateClass, text) {
+            statusLight.className = 'status-dot ' + stateClass;
+            statusText.innerText = text;
+        }
+
+        // --- 2. Three.js 3D 基礎設定 ---
+        const canvas = document.getElementById('gameCanvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a); // 深藍色宇宙背景
+        scene.fog = new THREE.Fog(0x0f172a, 200, 800);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        hemiLight.position.set(0, 200, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(100, 200, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 400;
+        dirLight.shadow.camera.bottom = -400;
+        dirLight.shadow.camera.left = -400;
+        dirLight.shadow.camera.right = 400;
+        scene.add(dirLight);
+
+        const groundGeo = new THREE.PlaneGeometry(1600, 1600);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(1600, 60, 0x334155, 0x1e293b);
+        gridHelper.position.y = 0.1;
+        scene.add(gridHelper);
+
+        const baseSphereGeo = new THREE.SphereGeometry(1, 32, 32); 
+        const pelletGeo = new THREE.SphereGeometry(1, 8, 8);       
+        const pelletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 }); // 光點改為科技藍發光感
+
+        // --- 3. 遊戲狀態與物件管理器 ---
+        let gameState = { players: {}, pellets: [] };
+        const meshes = { players: {}, pellets: [] };
+        const nameTagsDOM = {}; 
+
+        let yaw = 0;   
+        let pitch = 0; 
+        const keys = { w: false, a: false, s: false, d: false, ' ': false };
+        let justJumped = false;
+
+        // --- 主選單導覽邏輯 ---
+        btnShowMultiplayer.onclick = () => {
+            mainMenuPanel.classList.add('hidden');
+            multiplayerPanel.classList.remove('hidden');
+        };
+
+        document.getElementById('btn-mp-back').onclick = () => {
+            multiplayerPanel.classList.add('hidden');
+            mainMenuPanel.classList.remove('hidden');
+        };
+
+        btnShowSinglePlayer.onclick = () => {
+            mainMenuPanel.classList.add('hidden');
+            spConfigPanel.classList.remove('hidden');
+        };
+
+        document.getElementById('btn-sp-back').onclick = () => {
+            spConfigPanel.classList.add('hidden');
+            mainMenuPanel.classList.remove('hidden');
+        };
+
+        // --- 4. 單人模式流程與邏輯 ---
+        const npcCountSlider = document.getElementById('npc-count-slider');
+        const npcCountVal = document.getElementById('npc-count-val');
+        npcCountSlider.oninput = (e) => npcCountVal.innerText = e.target.value;
+
+        document.getElementById('btn-sp-start').onclick = () => {
+            const name = document.getElementById('sp-name-input').value.trim();
+            if (!name) return alert('請輸入玩家名稱！');
+            isSinglePlayer = true;
+            spConfigPanel.classList.add('hidden');
+            tutorialPanel.classList.remove('hidden');
+        };
+
+        function initSinglePlayer() {
+            myId = myId || 'SP_PLAYER_' + Math.random().toString(36).substr(2, 5);
+            localGameState = { players: {}, pellets: [] };
+            
+            const pName = document.getElementById('sp-name-input').value.trim();
+            const pColor = document.getElementById('sp-color-input').value;
+            const npcCount = parseInt(npcCountSlider.value);
+            
+            localGameState.players[myId] = createLocalPlayer(pName, pColor);
+            
+            const botNames = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Echo', 'Zeta', 'BotX', 'AI-101'];
+            for(let i=0; i<npcCount; i++) {
+                let bName = 'NPC_' + botNames[i % botNames.length] + i;
+                let bColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                localGameState.players['BOT_' + i] = createLocalPlayer(bName, bColor);
+            }
+
+            const pelletCount = 50 + (npcCount * 5);
+            for(let i=0; i<pelletCount; i++) {
+                localGameState.pellets.push({ 
+                    x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 
+                });
+            }
+
+            spGameLoopInterval = setInterval(singlePlayerLoop, 30);
+            startGameUI();
+        }
+
+        function createLocalPlayer(name, color) {
+            return {
+                x: (Math.random() - 0.5) * 800, y: 50, z: (Math.random() - 0.5) * 800,
+                vy: 0, radius: 20, color: color, name: name,
+                input: { dx: 0, dz: 0, jump: false }, isGrounded: false
+            };
+        }
+
+        function singlePlayerLoop() {
+            let players = localGameState.players;
+            let pellets = localGameState.pellets;
+            let difficultyLevel = parseInt(document.getElementById('npc-difficulty-select').value);
+
+            for (let id in players) {
+                if (id === myId) continue; 
+                let p = players[id];
+                let targetX = null, targetZ = null;
+                let minDist = Infinity;
+                let fleeing = false;
+
+                if (difficultyLevel >= 2) {
+                    for(let oid in players) {
+                        if (oid === id) continue;
+                        let op = players[oid];
+                        let d = Math.hypot(p.x - op.x, p.z - op.z);
+                        if (d < 350) {
+                            if (op.radius > p.radius * 1.1) {
+                                targetX = p.x - (op.x - p.x); targetZ = p.z - (op.z - p.z);
+                                fleeing = true; break;
+                            } 
+                            else if (difficultyLevel === 3 && p.radius > op.radius * 1.1) {
+                                if (d < minDist) { minDist = d; targetX = op.x; targetZ = op.z; }
+                            }
+                        }
+                    }
+                }
+
+                if (!fleeing && targetX === null) {
+                    for(let i=0; i<pellets.length; i++) {
+                        let d = Math.hypot(p.x - pellets[i].x, p.z - pellets[i].z);
+                        if (d < minDist) { minDist = d; targetX = pellets[i].x; targetZ = pellets[i].z; }
+                    }
+                }
+
+                if (targetX !== null && targetZ !== null) {
+                    let angle = Math.atan2(targetZ - p.z, targetX - p.x);
+                    if (difficultyLevel === 1) angle += (Math.random() - 0.5) * Math.PI; 
+                    p.input.dx = Math.cos(angle); p.input.dz = Math.sin(angle);
+                } else {
+                    p.input.dx = 0; p.input.dz = 0;
+                }
+                if (p.isGrounded && Math.random() < (difficultyLevel * 0.003)) p.input.jump = true;
+            }
+
+            for (let id in players) {
+                let p = players[id];
+                let speed = Math.max(2, 6 - (p.radius - 20) * 0.1); 
+                p.x += p.input.dx * speed; p.z += p.input.dz * speed;
+                p.vy -= 1.5; p.y += p.vy; p.isGrounded = false;
+                if (Math.abs(p.x) <= WORLD_SIZE && Math.abs(p.z) <= WORLD_SIZE) {
+                    if (p.y <= p.radius) { p.y = p.radius; p.vy = 0; p.isGrounded = true; }
+                }
+                if (p.input.jump && p.isGrounded) { p.vy = 25; p.input.jump = false; }
+            }
+
+            for (let id in players) {
+                let p = players[id];
+                for (let i = pellets.length - 1; i >= 0; i--) {
+                    let dist = Math.hypot(p.x - pellets[i].x, p.y - pellets[i].y, p.z - pellets[i].z);
+                    if (dist < p.radius) {
+                        pellets.splice(i, 1); p.radius += 1;              
+                        pellets.push({ x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 });
+                    }
+                }
+            }
+
+            let playerIds = Object.keys(players);
+            for (let i = 0; i < playerIds.length; i++) {
+                for (let j = i + 1; j < playerIds.length; j++) {
+                    let p1 = players[playerIds[i]], p2 = players[playerIds[j]];
+                    let dx = p1.x - p2.x, dy = p1.y - p2.y, dz = p1.z - p2.z;
+                    let dist = Math.hypot(dx, dy, dz);
+                    let minDist = p1.radius + p2.radius;
+
+                    if (dist < minDist && dist > 0) {
+                        let overlap = minDist - dist;
+                        let nx = dx / dist, ny = dy / dist, nz = dz / dist;
+
+                        p1.x += nx * (overlap / 2); p1.y += ny * (overlap / 2); p1.z += nz * (overlap / 2);
+                        p2.x -= nx * (overlap / 2); p2.y -= ny * (overlap / 2); p2.z -= nz * (overlap / 2);
+
+                        let knockbackForce = 15; 
+                        if (p1.radius > p2.radius * 1.1) { p2.x -= nx * knockbackForce; p2.z -= nz * knockbackForce; p2.vy = 8; } 
+                        else if (p2.radius > p1.radius * 1.1) { p1.x += nx * knockbackForce; p1.z += nz * knockbackForce; p1.vy = 8; }
+                    }
+                }
+            }
+            
+            for (let id in players) {
+                let p = players[id];
+                if (p.y + p.radius < 0) {
+                    if (id === myId) showLossMessage('你掉入虛空了！復活中...');
+                    p.x = (Math.random() - 0.5) * WORLD_SIZE; p.z = (Math.random() - 0.5) * WORLD_SIZE;
+                    p.y = 100; p.vy = 0; p.radius = 20; 
+                }
+            }
+
+            gameState = localGameState;
+            updateLeaderboard();
+        }
+        // --- 5. 多 পরীক্ষ模式流程事件 ---
+        btnCreateRoom.onclick = () => { socket.emit('create_room'); };
+
+        btnJoinRoom.onclick = () => {
+            const code = document.getElementById('room-input').value.trim();
+            if (code) socket.emit('join_room', code);
+        };
+
+        socket.on('room_joined', (roomId) => {
+            currentRoom = roomId;
+            multiplayerPanel.classList.add('hidden');
+            colorPanel.classList.remove('hidden');
+            roomIdDisplay.innerText = `房間代碼: ${roomId}`;
+        });
+
+        // 複製房間代碼按鈕邏輯
+        btnCopyRoom.onclick = () => {
+            if (!currentRoom) return;
+            const tempInput = document.createElement('input');
+            tempInput.value = currentRoom;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            // 複製成功的視覺回饋
+            btnCopyRoom.innerText = '✅ 已複製';
+            btnCopyRoom.style.background = 'rgba(16, 185, 129, 0.2)';
+            btnCopyRoom.style.borderColor = '#10b981';
+            btnCopyRoom.style.color = '#34d399';
+            
+            setTimeout(() => {
+                btnCopyRoom.innerText = '📋 複製';
+                btnCopyRoom.style.background = 'rgba(255,255,255,0.1)';
+                btnCopyRoom.style.borderColor = 'rgba(255,255,255,0.2)';
+                btnCopyRoom.style.color = '#e2e8f0';
+            }, 2000);
+        };
+
+        // 點擊下一步，發送預先檢查請求給伺服器
+        document.getElementById('btn-start-game').onclick = () => {
+            const name = document.getElementById('name-input').value.trim();
+            const color = document.getElementById('color-input').value;
+            if (!name) return alert('請先輸入玩家名稱！');
+            socket.emit('check_availability', { roomId: currentRoom, color: color, name: name });
+        };
+
+        socket.on('check_result', (res) => {
+            if (res.valid) {
+                colorPanel.classList.add('hidden');
+                tutorialPanel.classList.remove('hidden');
+            } else {
+                alert(res.msg);
+            }
+        });
+
+        document.getElementById('btn-confirm-start').onclick = () => {
+            const btnConfirm = document.getElementById('btn-confirm-start');
+            btnConfirm.innerText = '進入戰場中...';
+            btnConfirm.disabled = true;
+
+            if (isSinglePlayer) {
+                initSinglePlayer();
+            } else {
+                const color = document.getElementById('color-input').value;
+                const name = document.getElementById('name-input').value.trim();
+                socket.emit('join_game', { roomId: currentRoom, color: color, name: name });
+            }
+        };
+
+        function handleJoinError(msg) {
+            alert(msg);
+            tutorialPanel.classList.add('hidden');
+            colorPanel.classList.remove('hidden');
+            const btnConfirm = document.getElementById('btn-confirm-start');
+            btnConfirm.innerText = '我準備好了！';
+            btnConfirm.disabled = false;
+        }
+
+        socket.on('room_error', (msg) => alert(msg));
+        socket.on('color_error', handleJoinError);
+        socket.on('name_error', handleJoinError); 
+        
+        socket.on('game_started', startGameUI);
+
+        function startGameUI() {
+            uiLayer.style.opacity = '0';
+            setTimeout(() => uiLayer.classList.add('hidden'), 400); 
+            crosshair.style.display = 'block';
+            settingsBtn.style.display = 'block'; 
+            document.getElementById('leaderboard').style.display = 'block'; 
+            nameTagsContainer.style.display = 'block'; 
+            instruction.classList.remove('hidden');
+            isPlaying = true;
+            document.body.requestPointerLock();
+        }
+
+        function showLossMessage(msg) {
+            instruction.innerText = msg;
+            instruction.style.color = '#ef4444';
+            instruction.style.fontSize = '1.8rem';
+            setTimeout(() => {
+                instruction.innerText = '點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | 滑鼠 旋轉視角';
+                instruction.style.color = 'white';
+                instruction.style.fontSize = '1.05rem';
+            }, 3000);
+        }
+
+        socket.on('you_lost', showLossMessage);
+
+        // --- 7. 遊戲設定選單與操作 ---
+        document.addEventListener('pointerlockchange', () => {
+            if (isPlaying) {
+                if (document.pointerLockElement === document.body) settingsOverlay.classList.remove('active');
+                else settingsOverlay.classList.add('active');
+            }
+        });
+
+        settingsBtn.onclick = () => {
+            if (document.pointerLockElement === document.body) document.exitPointerLock();
+            else settingsOverlay.classList.add('active');
+        };
+
+        btnResumeGame.onclick = () => document.body.requestPointerLock();
+        btnLeaveGame.onclick = () => window.location.reload();
+
+        sensitivitySlider.oninput = (e) => {
+            const val = e.target.value;
+            sensitivityValue.innerText = val;
+            mouseSensitivityMultiplier = val / 50; 
+        };
+
+        document.body.addEventListener('click', (e) => {
+            if (isPlaying && !settingsOverlay.classList.contains('active') && 
+                document.pointerLockElement !== document.body && 
+                e.target.id !== 'settings-btn' && !e.target.closest('#settings-overlay')) {
+                document.body.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === document.body) {
+                yaw -= e.movementX * baseSensitivity * mouseSensitivityMultiplier;
+                pitch -= e.movementY * baseSensitivity * mouseSensitivityMultiplier;
+                pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ' && !justJumped) justJumped = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false;
+        });
+
+        setInterval(() => {
+            if (!isPlaying) return;
+
+            let moveX = 0, moveZ = 0;
+            if (keys.w) moveZ -= 1;
+            if (keys.s) moveZ += 1;
+            if (keys.a) moveX -= 1;
+            if (keys.d) moveX += 1;
+
+            let dx = moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
+            let dz = -moveX * Math.sin(yaw) + moveZ * Math.cos(yaw);
+
+            let len = Math.hypot(dx, dz);
+            if (len > 0) { dx /= len; dz /= len; }
+
+            if (isSinglePlayer) {
+                if (localGameState.players[myId]) localGameState.players[myId].input = { dx, dz, jump: justJumped };
+            } else if (currentRoom) {
+                socket.emit('player_input', { dx, dz, jump: justJumped });
+            }
+            justJumped = false; 
+        }, 30);
+
+        // --- 排行榜 ---
+        function updateLeaderboard() {
+            const listDiv = document.getElementById('leaderboard-list');
+            if (!gameState.players) return;
+
+            const playersArr = Object.keys(gameState.players).map(id => {
+                return { id: id, ...gameState.players[id] };
+            });
+            playersArr.sort((a, b) => b.radius - a.radius);
+
+            const topPlayers = playersArr.slice(0, 5);
+            let html = '';
+
+            topPlayers.forEach((p, index) => {
+                const isMe = p.id === myId;
+                const rowStyle = isMe ? 'background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);' : '';
+                const displayName = p.name || '無名氏';
+                
+                html += `
+                    <div class="leaderboard-item" style="${rowStyle}">
+                        <div class="player-info" style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-right: 10px;">
+                            <span style="width: 15px; color: #94a3b8; display: inline-block;">${index + 1}.</span>
+                            <span class="player-color-dot" style="background-color: ${p.color}; box-shadow: 0 0 5px ${p.color};"></span>
+                            <span style="color: ${isMe ? '#38bdf8' : 'white'};">${isMe ? displayName + ' (你)' : displayName}</span>
+                        </div>
+                        <span class="player-score">${Math.floor(p.radius)}</span>
+                    </div>
+                `;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        // --- 8. 接收狀態與 3D 渲染 ---
+        socket.on('update_game_state', (state) => {
+            if (!isSinglePlayer) {
+                gameState = state;
+                updateLeaderboard(); 
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!isPlaying) return;
+
+            const currentPlayers = {};
+            
+            if (gameState.players) {
+                for (let id in gameState.players) {
+                    currentPlayers[id] = true;
+                    const p = gameState.players[id];
+                    
+                    if (!meshes.players[id]) {
+                        const mat = new THREE.MeshStandardMaterial({ 
+                            color: p.color, roughness: 0.7, metalness: 0.1 
+                        });
+                        const mesh = new THREE.Mesh(baseSphereGeo, mat);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        scene.add(mesh);
+                        meshes.players[id] = mesh;
+                    }
+                    
+                    if (!nameTagsDOM[id]) {
+                        const tag = document.createElement('div');
+                        tag.className = 'name-tag';
+                        nameTagsContainer.appendChild(tag);
+                        nameTagsDOM[id] = tag;
+                    }
+                    nameTagsDOM[id].innerText = p.name || '無名氏';
+                    nameTagsDOM[id].style.borderColor = p.color; 
+                    if (id === myId) nameTagsDOM[id].style.color = '#38bdf8'; 
+                    
+                    const mesh = meshes.players[id];
+                    
+                    const targetX = p.x || 0;
+                    const targetY = p.y || 20;
+                    const targetZ = p.z || 0;
+
+                    const stepX = (targetX - mesh.position.x) * 0.3;
+                    const stepY = (targetY - mesh.position.y) * 0.3;
+                    const stepZ = (targetZ - mesh.position.z) * 0.3;
+
+                    mesh.position.x += stepX;
+                    mesh.position.y += stepY;
+                    mesh.position.z += stepZ;
+                    
+                    const targetScale = p.radius || 20;
+                    const currentRadius = mesh.scale.x || 1; 
+
+                    const distance = Math.hypot(stepX, stepZ);
+                    if (distance > 0.001) {
+                        const angle = distance / currentRadius;
+                        const axis = new THREE.Vector3(stepZ, 0, -stepX).normalize();
+                        mesh.rotateOnWorldAxis(axis, angle);
+                    }
+
+                    mesh.scale.x += (targetScale - mesh.scale.x) * 0.1;
+                    mesh.scale.y += (targetScale - mesh.scale.y) * 0.1;
+                    mesh.scale.z += (targetScale - mesh.scale.z) * 0.1;
+
+                    const tagPos = mesh.position.clone();
+                    tagPos.y += currentRadius + 8; 
+                    tagPos.project(camera); 
+
+                    if (tagPos.z < 1) { 
+                        const screenX = (tagPos.x * 0.5 + 0.5) * window.innerWidth;
+                        const screenY = (tagPos.y * -0.5 + 0.5) * window.innerHeight;
+                        nameTagsDOM[id].style.left = `${screenX}px`;
+                        nameTagsDOM[id].style.top = `${screenY}px`;
+                        nameTagsDOM[id].style.opacity = '1';
+                    } else {
+                        nameTagsDOM[id].style.opacity = '0'; 
+                    }
+
+                    if (id === myId) {
+                        const cameraDistance = 150 + p.radius * 2;
+                        const cx = mesh.position.x + cameraDistance * Math.sin(yaw) * Math.cos(pitch);
+                        const cy = mesh.position.y + cameraDistance * Math.sin(pitch) + p.radius; 
+                        const cz = mesh.position.z + cameraDistance * Math.cos(yaw) * Math.cos(pitch);
+
+                        camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.2); 
+                        if (camera.position.y < 3) camera.position.y = 3;
+                        camera.lookAt(mesh.position);
+                    }
+                }
+            }
+
+            for (let id in meshes.players) {
+                if (!currentPlayers[id]) {
+                    scene.remove(meshes.players[id]);
+                    meshes.players[id].material.dispose();
+                    delete meshes.players[id];
+                    
+                    if (nameTagsDOM[id]) {
+                        nameTagsDOM[id].remove();
+                        delete nameTagsDOM[id];
+                    }
+                }
+            }
+
+            if (gameState.pellets) {
+                while (meshes.pellets.length < gameState.pellets.length) {
+                    const mesh = new THREE.Mesh(pelletGeo, pelletMat);
+                    mesh.scale.set(4, 4, 4);
+                    scene.add(mesh);
+                    meshes.pellets.push(mesh);
+                }
+                while (meshes.pellets.length > gameState.pellets.length) {
+                    const mesh = meshes.pellets.pop();
+                    scene.remove(mesh);
+                }
+                for (let i = 0; i < gameState.pellets.length; i++) {
+                    const p = gameState.pellets[i];
+                    meshes.pellets[i].position.set(p.x, p.y || 4, p.z || p.y); 
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

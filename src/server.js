@@ -121,14 +121,9 @@ setInterval(() => {
             let p = players[id];
             let input = p.input;
 
-            // 水平移動：越大走越慢
             let speed = Math.max(2, 6 - (p.radius - 20) * 0.1); 
             p.x += input.dx * speed;
             p.z += input.dz * speed;
-
-            // 地圖邊界限制
-            //p.x = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.x));
-            //p.z = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, p.z));
 
             // Y 軸物理：重力
             p.vy -= 1.5; // 重力加速度
@@ -136,11 +131,21 @@ setInterval(() => {
 
             // 地板碰撞 (y = 0 是地面，球體的底部不能穿過地面)
             let isGrounded = false;
-            if (p.y <= p.radius) {
-                p.y = p.radius; // 卡在地表
-                p.vy = 0;
-                isGrounded = true;
+            // 【修改點1】必須在場地範圍內 (WORLD_SIZE) 才會有地板擋住，超過範圍球就會繼續往下掉
+            if (Math.abs(p.x) <= WORLD_SIZE && Math.abs(p.z) <= WORLD_SIZE) {
+                if (p.y <= p.radius) {
+                    p.y = p.radius; // 卡在地表
+                    p.vy = 0;
+                    isGrounded = true;
+                }
             }
+
+            // 跳躍判定
+            if (input.jump && isGrounded) {
+                p.vy = 25; 
+                input.jump = false; 
+            }
+        }
 
             // 跳躍判定
             if (input.jump && isGrounded) {
@@ -187,16 +192,17 @@ setInterval(() => {
             }
         }
 
-        // 4. 邊界檢查與重生 (加在廣播之前)
+        // 4. 邊界檢查與重生 
         for (let id in players) {
             let p = players[id];
-            if (Math.abs(p.x) > WORLD_SIZE || Math.abs(p.z) > WORLD_SIZE) {
-                io.to(id).emit('you_lost', '你被撞出場外了！重新開始中...');
+            // 【修改點2】球的中心點 (p.y) 加上半徑 (p.radius) 小於 0，代表整顆球都掉到地板底下了
+            if (p.y + p.radius < 0) {
+                io.to(id).emit('you_lost', '你掉入虛空了！復活中...');
                 
-                // 重置狀態
-                p.x = (Math.random() - 0.5) * 200;
-                p.z = (Math.random() - 0.5) * 200;
-                p.y = 20; 
+                // 重置狀態 (直接在當前房間給予隨機座標)
+                p.x = (Math.random() - 0.5) * WORLD_SIZE;
+                p.z = (Math.random() - 0.5) * WORLD_SIZE;
+                p.y = 100;     // 從天上掉下來，比較有重生的感覺
                 p.vy = 0;
                 p.radius = 20; // 回復最小體型
             }

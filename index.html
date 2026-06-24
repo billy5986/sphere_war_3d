@@ -54,7 +54,7 @@
             box-sizing: border-box;
         }
         
-        /* 統一美化滾動條 (滑塊) */
+        /* 統一美化滾動條 */
         .panel::-webkit-scrollbar, .menu-card::-webkit-scrollbar { width: 8px; }
         .panel::-webkit-scrollbar-track, .menu-card::-webkit-scrollbar-track { 
             background: rgba(0, 0, 0, 0.25); border-radius: 4px; margin: 4px 0; 
@@ -556,7 +556,7 @@
 
         // --- Core State Variables ---
         const WORLD_SIZE = 800; 
-        const SPIKE_RADIUS = 15; // 新增尖刺的實體半徑
+        const SPIKE_RADIUS = 15; // 尖刺的實體半徑
         let gameState = { players: {}, pellets: [], spikes: [] };
         const meshes = { players: {}, pellets: [], spikes: [] };
         const nameTagsDOM = {}; 
@@ -745,7 +745,7 @@
                 }
             }
 
-            // 玩家碰撞判定
+            // 5. 玩家碰撞判定 (平衡優化版：雙向反作用力與質量排擠)
             let playerIds = Object.keys(players);
             for (let i = 0; i < playerIds.length; i++) {
                 for (let j = i + 1; j < playerIds.length; j++) {
@@ -766,40 +766,39 @@
                         let p1Dashing = p1.input.dash && p1.radius > 20;
                         let p2Dashing = p2.input.dash && p2.radius > 20;
 
-                        let f1on2 = 0; 
-                        let f2on1 = 0;
+                        // 基礎與衝刺衝擊力分配
+                        let f1on2 = baseForce; 
+                        let f2on1 = baseForce;
 
-                        // 判斷誰是攻擊者(贏家)
                         if (p1Dashing && !p2Dashing) {
-                            f1on2 = (p1.radius > p2.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2; 
+                            f1on2 = baseForce * 2.5; 
                         } else if (p2Dashing && !p1Dashing) {
-                            f2on1 = (p2.radius > p1.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2;
-                        } else {
-                            if (p1.radius > p2.radius * 1.1) {
-                                f1on2 = p1Dashing ? baseForce * 1.5 : baseForce;
-                            } else if (p2.radius > p1.radius * 1.1) {
-                                f2on1 = p2Dashing ? baseForce * 1.5 : baseForce;
-                            }
+                            f2on1 = baseForce * 2.5;
+                        } else if (p1Dashing && p2Dashing) {
+                            f1on2 = baseForce * 1.5;
+                            f2on1 = baseForce * 1.5;
                         }
 
-                        // 僅被撞擊者承受重疊排擠與擊飛力道 (攻擊者不受反作用力影響)
-                        if (f1on2 > 0) {
-                            p2.x -= hnx * overlap;
-                            p2.z -= hnz * overlap;
-                            let res2 = Math.max(0.2, 20 / p2.radius);
-                            p2.x -= hnx * (f1on2 * res2);
-                            p2.z -= hnz * (f1on2 * res2);
-                        } else if (f2on1 > 0) {
-                            p1.x += hnx * overlap;
-                            p1.z += hnz * overlap;
-                            let res1 = Math.max(0.2, 20 / p1.radius);
-                            p1.x += hnx * (f2on1 * res1);
-                            p1.z += hnz * (f2on1 * res1);
-                        } else {
-                            // 平手，雙方各自退開一半
-                            p1.x += hnx * (overlap / 2); p1.z += hnz * (overlap / 2);
-                            p2.x -= hnx * (overlap / 2); p2.z -= hnz * (overlap / 2);
-                        }
+                        // 質量抵抗 (最低保障提高至 0.4，大球也得退位)
+                        let res1 = Math.max(0.4, 20 / p1.radius);
+                        let res2 = Math.max(0.4, 20 / p2.radius);
+
+                        // 按各自半徑(質量)比例分攤重疊排擠，而不是只推單方
+                        let totalRadius = p1.radius + p2.radius;
+                        let p1OverlapRatio = p2.radius / totalRadius;
+                        let p2OverlapRatio = p1.radius / totalRadius;
+
+                        p1.x += hnx * overlap * p1OverlapRatio;
+                        p1.z += hnz * overlap * p1OverlapRatio;
+                        p2.x -= hnx * overlap * p2OverlapRatio;
+                        p2.z -= hnz * overlap * p2OverlapRatio;
+
+                        // 雙方同時加上反作用力
+                        p1.x += hnx * (f2on1 * res1);
+                        p1.z += hnz * (f2on1 * res1);
+
+                        p2.x -= hnx * (f1on2 * res2);
+                        p2.z -= hnz * (f1on2 * res2);
                     }
                 }
             }
@@ -1143,7 +1142,7 @@
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.body && !isTouchDevice) {
                 yaw -= e.movementX * baseSensitivity * mouseSensitivityMultiplier;
-                pitch += e.movementY * baseSensitivity * mouseSensitivityMultiplier; // 軸向反轉優化
+                pitch += e.movementY * baseSensitivity * mouseSensitivityMultiplier; 
                 pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
             }
         });
@@ -1161,7 +1160,7 @@
                 const dy = e.touches[0].clientY - touchStartY;
                 
                 yaw -= dx * baseSensitivity * 0.5 * mouseSensitivityMultiplier;
-                pitch += dy * baseSensitivity * 0.5 * mouseSensitivityMultiplier; // 軸向反轉優化
+                pitch += dy * baseSensitivity * 0.5 * mouseSensitivityMultiplier; 
                 pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
                 
                 touchStartX = e.touches[0].clientX;
@@ -1334,7 +1333,7 @@
                     const targetScale = p.radius || 20;
                     const currentRadius = mesh.scale.x || 1; 
 
-                    // 滾動效果
+                    // 滾動與旋轉效果
                     const distance = Math.hypot(stepX, stepZ);
                     if (distance > 0.05) {
                         const angle = distance / currentRadius;
@@ -1361,7 +1360,7 @@
                         nameTagsDOM[id].style.opacity = '0'; 
                     }
 
-                    // 鏡頭鎖定
+                    // 鏡頭鎖定與動態阻尼
                     if (id === myId) {
                         const cameraDistance = 150 + p.radius * 2.2;
                         const cx = mesh.position.x + cameraDistance * Math.sin(yaw) * Math.cos(pitch);
@@ -1405,7 +1404,7 @@
                 }
             }
 
-            // 渲染光點
+            // 渲染光點 (已修正 3D 渲染高度與飄移問題)
             if (gameState.pellets) {
                 while (meshes.pellets.length < gameState.pellets.length) {
                     const mesh = new THREE.Mesh(pelletGeo, pelletMat);
@@ -1419,7 +1418,7 @@
                 }
                 for (let i = 0; i < gameState.pellets.length; i++) {
                     const p = gameState.pellets[i];
-                    meshes.pellets[i].position.set(p.x, p.y || 4, p.z || p.y); 
+                    meshes.pellets[i].position.set(p.x, p.y || 4, p.z); 
                 }
             }
 

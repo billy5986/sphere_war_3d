@@ -7,11 +7,14 @@ let rooms = {};
 const MAX_PELLETS = 50;
 const MAX_SPIKES = 15;
 const WORLD_SIZE = 800; 
+const SPIKE_RADIUS = 15; // 尖刺的物理半徑
 
+// 產生隨機房間代碼
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// 產生光點
 function spawnPellet() {
     return { 
         x: (Math.random() - 0.5) * WORLD_SIZE * 2, 
@@ -20,6 +23,7 @@ function spawnPellet() {
     };
 }
 
+// 產生紅色尖刺
 function spawnSpike() {
     return {
         x: (Math.random() - 0.5) * WORLD_SIZE * 1.8,
@@ -117,8 +121,9 @@ setInterval(() => {
             let isDashing = input.dash && p.radius > 20;
 
             let sizeFactor = Math.max(0, p.radius - 20); 
-            let baseSpeed = Math.max(3, 8 - sizeFactor * 0.025); // 修改: 吃200光點降到最低
-            let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.004); // 修改: 吃200光點降到最低
+            // 吃到 200 顆光點降到最低
+            let baseSpeed = Math.max(3, 8 - sizeFactor * 0.025); 
+            let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.004); 
             let dashCost = 0.05 + sizeFactor * 0.002;
 
             let speed = isDashing ? baseSpeed * dashMult : baseSpeed;
@@ -158,28 +163,40 @@ setInterval(() => {
             }
         }
 
-        // 3. 尖刺陷阱判定 (大於 40 半徑 / 20 能量觸發)
+        // 3. 尖刺陷阱判定 (加入物理實體阻擋效果)
         for (let id in players) {
             let p = players[id];
             for (let i = 0; i < spikes.length; i++) {
                 let spike = spikes[i];
                 let dist = Math.hypot(p.x - spike.x, p.z - spike.z);
-                if (dist < p.radius + 10) {
+                let minDist = p.radius + SPIKE_RADIUS;
+
+                // 如果發生重疊 (發生物理碰撞)
+                if (dist < minDist) {
+                    let overlap = minDist - dist;
+                    let nx = dist > 0 ? (p.x - spike.x) / dist : 1;
+                    let nz = dist > 0 ? (p.z - spike.z) / dist : 0;
+
+                    // 物理效果：強制將玩家推擠出尖刺範圍，無法穿越
+                    p.x += nx * overlap;
+                    p.z += nz * overlap;
+
+                    // 巨球懲罰判定 (大於 40 半徑 / 20 能量觸發)
                     if (p.radius > 40) {
                         let energy = p.radius - 20;
-                        let lostEnergy = energy * 0.2; 
+                        let lostEnergy = energy * 0.2; // 損失 20% 能量
                         p.radius -= lostEnergy;
                         
-                        p.vy = 20; 
-                        let angle = Math.atan2(p.z - spike.z, p.x - spike.x);
-                        p.x += Math.cos(angle) * 40; 
-                        p.z += Math.sin(angle) * 40;
+                        p.vy = 20; // 刺到會稍微彈起
+                        // 給予額外強烈擊退力道
+                        p.x += nx * 40; 
+                        p.z += nz * 40;
 
                         // 噴灑光點
                         let dropCount = Math.min(30, Math.floor(lostEnergy));
                         for (let d = 0; d < dropCount; d++) {
                             let dropAngle = Math.random() * Math.PI * 2;
-                            let dropDist = 20 + Math.random() * 60;
+                            let dropDist = SPIKE_RADIUS + 10 + Math.random() * 60;
                             pellets.push({
                                 x: spike.x + Math.cos(dropAngle) * dropDist, y: 4,
                                 z: spike.z + Math.sin(dropAngle) * dropDist
@@ -190,7 +207,7 @@ setInterval(() => {
             }
         }
 
-        // 4. 玩家碰撞判定
+        // 4. 玩家碰撞判定 (被撞擊者才會被擊飛與退開)
         let playerIds = Object.keys(players);
         for (let i = 0; i < playerIds.length; i++) {
             for (let j = i + 1; j < playerIds.length; j++) {
@@ -208,9 +225,6 @@ setInterval(() => {
                     let hnx = hDist > 0 ? dx / hDist : 1;
                     let hnz = hDist > 0 ? dz / hDist : 0;
 
-                    p1.x += hnx * (overlap / 2); p1.z += hnz * (overlap / 2);
-                    p2.x -= hnx * (overlap / 2); p2.z -= hnz * (overlap / 2);
-
                     let baseForce = 200;
                     let p1Dashing = p1.input.dash && p1.radius > 20;
                     let p2Dashing = p2.input.dash && p2.radius > 20;
@@ -218,25 +232,43 @@ setInterval(() => {
                     let f1on2 = 0; 
                     let f2on1 = 0; 
 
-                    if (p1.radius > p2.radius * 1.1) {
-                        f1on2 = p1Dashing ? baseForce * 1.5 : baseForce;
-                    } else if (p1Dashing && !p2Dashing) {
-                        f1on2 = baseForce * 1.2; 
-                    }
-
-                    if (p2.radius > p1.radius * 1.1) {
-                        f2on1 = p2Dashing ? baseForce * 1.5 : baseForce;
+                    // 判斷誰是攻擊者(贏家)
+                    if (p1Dashing && !p2Dashing) {
+                        f1on2 = (p1.radius > p2.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2; 
                     } else if (p2Dashing && !p1Dashing) {
-                        f2on1 = baseForce * 1.2;
+                        f2on1 = (p2.radius > p1.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2;
+                    } else {
+                        if (p1.radius > p2.radius * 1.1) {
+                            f1on2 = p1Dashing ? baseForce * 1.5 : baseForce;
+                        } else if (p2.radius > p1.radius * 1.1) {
+                            f2on1 = p2Dashing ? baseForce * 1.5 : baseForce;
+                        }
                     }
 
-                    let res1 = Math.max(0.2, 20 / p1.radius);
-                    let res2 = Math.max(0.2, 20 / p2.radius);
-
-                    p1.x += hnx * (f2on1 * res1);
-                    p1.z += hnz * (f2on1 * res1);
-                    p2.x -= hnx * (f1on2 * res2);
-                    p2.z -= hnz * (f1on2 * res2);
+                    // 僅被撞擊者承受重疊排擠與擊飛力道 (攻擊者不受反作用力影響)
+                    if (f1on2 > 0) {
+                        // p1 撞擊 p2，p2 獨自承受推擠
+                        p2.x -= hnx * overlap;
+                        p2.z -= hnz * overlap;
+                        
+                        let res2 = Math.max(0.2, 20 / p2.radius);
+                        p2.x -= hnx * (f1on2 * res2);
+                        p2.z -= hnz * (f1on2 * res2);
+                    } else if (f2on1 > 0) {
+                        // p2 撞擊 p1，p1 獨自承受推擠
+                        p1.x += hnx * overlap;
+                        p1.z += hnz * overlap;
+                        
+                        let res1 = Math.max(0.2, 20 / p1.radius);
+                        p1.x += hnx * (f2on1 * res1);
+                        p1.z += hnz * (f2on1 * res1);
+                    } else {
+                        // 平手，雙方各自退開一半 (無額外擊飛力)
+                        p1.x += hnx * (overlap / 2);
+                        p1.z += hnz * (overlap / 2);
+                        p2.x -= hnx * (overlap / 2);
+                        p2.z -= hnz * (overlap / 2);
+                    }
                 }
             }
         }

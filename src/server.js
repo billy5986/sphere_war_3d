@@ -207,7 +207,7 @@ setInterval(() => {
             }
         }
 
-        // 4. 玩家碰撞判定 (被撞擊者才會被擊飛與退開)
+        // 4. 玩家碰撞判定 (平衡優化版：引入反作用力與衝刺破防機制)
         let playerIds = Object.keys(players);
         for (let i = 0; i < playerIds.length; i++) {
             for (let j = i + 1; j < playerIds.length; j++) {
@@ -229,46 +229,42 @@ setInterval(() => {
                     let p1Dashing = p1.input.dash && p1.radius > 20;
                     let p2Dashing = p2.input.dash && p2.radius > 20;
 
-                    let f1on2 = 0; 
-                    let f2on1 = 0; 
+                    // 基礎衝擊力
+                    let f1on2 = baseForce;
+                    let f2on1 = baseForce;
 
-                    // 判斷誰是攻擊者(贏家)
+                    // 衝刺加成：如果單方面衝刺，衝刺者給予對方的力道大幅增加（用來對抗大球的質量）
                     if (p1Dashing && !p2Dashing) {
-                        f1on2 = (p1.radius > p2.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2; 
+                        f1on2 = baseForce * 2.5; // p1 衝刺，給 p2 的力道變大
                     } else if (p2Dashing && !p1Dashing) {
-                        f2on1 = (p2.radius > p1.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2;
-                    } else {
-                        if (p1.radius > p2.radius * 1.1) {
-                            f1on2 = p1Dashing ? baseForce * 1.5 : baseForce;
-                        } else if (p2.radius > p1.radius * 1.1) {
-                            f2on1 = p2Dashing ? baseForce * 1.5 : baseForce;
-                        }
+                        f2on1 = baseForce * 2.5; // p2 衝刺，給 p1 的力道變大
+                    } else if (p1Dashing && p2Dashing) {
+                        f1on2 = baseForce * 1.5;
+                        f2on1 = baseForce * 1.5;
                     }
 
-                    // 僅被撞擊者承受重疊排擠與擊飛力道 (攻擊者不受反作用力影響)
-                    if (f1on2 > 0) {
-                        // p1 撞擊 p2，p2 獨自承受推擠
-                        p2.x -= hnx * overlap;
-                        p2.z -= hnz * overlap;
-                        
-                        let res2 = Math.max(0.2, 20 / p2.radius);
-                        p2.x -= hnx * (f1on2 * res2);
-                        p2.z -= hnz * (f1on2 * res2);
-                    } else if (f2on1 > 0) {
-                        // p2 撞擊 p1，p1 獨自承受推擠
-                        p1.x += hnx * overlap;
-                        p1.z += hnz * overlap;
-                        
-                        let res1 = Math.max(0.2, 20 / p1.radius);
-                        p1.x += hnx * (f2on1 * res1);
-                        p1.z += hnz * (f2on1 * res1);
-                    } else {
-                        // 平手，雙方各自退開一半 (無額外擊飛力)
-                        p1.x += hnx * (overlap / 2);
-                        p1.z += hnz * (overlap / 2);
-                        p2.x -= hnx * (overlap / 2);
-                        p2.z -= hnz * (overlap / 2);
-                    }
+                    // 質量（半徑）抵抗係數：半徑越大，被擊退的比例越小
+                    // 原本最小值限制在 0.2，現在提升至 0.4，確保巨球被小球衝刺撞到時依然有足夠的位移
+                    let res1 = Math.max(0.4, 20 / p1.radius); 
+                    let res2 = Math.max(0.4, 20 / p2.radius);
+
+                    // 修正重疊排擠 (雙方依據質量比例共同退開，不再由單方承受)
+                    // 質量越大移動越少，質量越小被推開越多
+                    let totalRadius = p1.radius + p2.radius;
+                    let p1OverlapRatio = p2.radius / totalRadius; // p2 越大，p1 被推開越多
+                    let p2OverlapRatio = p1.radius / totalRadius;
+
+                    p1.x += hnx * overlap * p1OverlapRatio;
+                    p1.z += hnz * overlap * p1OverlapRatio;
+                    p2.x -= hnx * overlap * p2OverlapRatio;
+                    p2.z -= hnz * overlap * p2OverlapRatio;
+
+                    // 擊飛力道套用 (雙方皆會受到對方的衝擊力影響，並乘上自己的質量抵抗)
+                    p1.x += hnx * (f2on1 * res1);
+                    p1.z += hnz * (f2on1 * res1);
+
+                    p2.x -= hnx * (f1on2 * res2);
+                    p2.z -= hnz * (f1on2 * res2);
                 }
             }
         }

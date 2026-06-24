@@ -114,17 +114,20 @@ setInterval(() => {
         let pellets = room.pellets;
         let spikes = room.spikes;
 
-        // 1. 移動與物理 (動態速度與衝刺耗損)
+        // 1. 移動與物理 (150 顆漸進式衰減)
         for (let id in players) {
             let p = players[id];
             let input = p.input;
             let isDashing = input.dash && p.radius > 20;
 
             let sizeFactor = Math.max(0, p.radius - 20); 
-            // 吃到 200 顆光點降到最低
-            let baseSpeed = Math.max(3, 8 - sizeFactor * 0.025); 
-            let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.004); 
-            let dashCost = 0.05 + sizeFactor * 0.002;
+            
+            // ⭐️ 核心修改：漸進式平方根衰減 (吃到 150 顆 / 半徑 170 時降至保底速度 3)
+            let baseSpeed = Math.max(3, 8 - Math.sqrt(sizeFactor) * 0.41); 
+            
+            // 配合 150 顆上限微調衝刺耗損與倍率
+            let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.0053); 
+            let dashCost = 0.05 + sizeFactor * 0.0026;
 
             let speed = isDashing ? baseSpeed * dashMult : baseSpeed;
 

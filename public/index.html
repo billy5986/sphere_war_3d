@@ -47,14 +47,27 @@
         .panel {
             background: rgba(15, 23, 42, 0.4);
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            padding: 45px; border-radius: 32px; text-align: center; width: 420px;
+            padding: 45px; border-radius: 32px; text-align: center; width: 440px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.15);
             max-height: 90vh; overflow-y: auto; position: relative;
             box-sizing: border-box;
         }
-        .panel::-webkit-scrollbar { width: 6px; }
-        .panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        
+        /* 統一美化滾動條 (滑塊) */
+        .panel::-webkit-scrollbar, .menu-card::-webkit-scrollbar { width: 8px; }
+        .panel::-webkit-scrollbar-track, .menu-card::-webkit-scrollbar-track { 
+            background: rgba(0, 0, 0, 0.25); border-radius: 4px; margin: 4px 0; 
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5); 
+        }
+        .panel::-webkit-scrollbar-thumb, .menu-card::-webkit-scrollbar-thumb { 
+            background: rgba(56, 189, 248, 0.4); border-radius: 4px; 
+            border: 1px solid rgba(255,255,255,0.1); transition: background 0.3s;
+        }
+        .panel::-webkit-scrollbar-thumb:hover, .menu-card::-webkit-scrollbar-thumb:hover { 
+            background: rgba(56, 189, 248, 0.9); 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
 
         .game-title {
             margin-top: 0; font-size: 3.2rem; letter-spacing: 4px; font-weight: 900; text-transform: uppercase;
@@ -89,7 +102,7 @@
         }
         .menu-card:hover::before { left: 200%; }
 
-        .menu-card h3 { margin: 0 0 8px 0; font-size: 1.25rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 8px; position: relative; z-index: 2; }
+        .menu-card h3 { margin: 0 0 8px 0; font-size: 1.15rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 8px; position: relative; z-index: 2; }
         .menu-card p { margin: 0 0 16px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; position: relative; z-index: 2; }
         
         .divider { 
@@ -239,9 +252,35 @@
             background: rgba(56, 189, 248, 0.5); border-color: #38bdf8;
             transform: scale(0.9);
         }
+
+        /* Toast 提示框系統 */
+        #toast-container {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            background: rgba(220, 38, 38, 0.95); color: white; padding: 14px 28px;
+            border-radius: 12px; font-weight: 700; font-size: 1.05rem; letter-spacing: 1px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0; transform: translateY(-20px) scale(0.9); text-align: center; 
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+        .toast.success { background: rgba(16, 185, 129, 0.95); }
+
+        /* 錯誤震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .shake-error { animation: shake 0.4s; border-color: #ef4444 !important; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2) !important; }
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
 
     <div id="connection-status">
         <span id="status-light" class="status-dot connecting"></span>
@@ -372,19 +411,18 @@
             <h1 class="game-title" style="font-size: 2.2rem;">玩法介紹</h1>
             <div class="game-subtitle" style="margin-bottom: 20px;">How to play</div>
 
-            <div class="menu-card" style="margin-bottom: 25px;">
+            <div class="menu-card" style="margin-bottom: 25px; max-height: 40vh; overflow-y: auto;">
                 <h3 style="color: #38bdf8;">🎯 目標與規則</h3>
-                <p>🟢 <b>成長：</b>收集地上的藍色光點讓自己變大。<br>
-                   💥 <b>碰撞：</b>體型大於對手 10% 即可將其撞飛！<br>
-                   ⚔️ <b>圍剿：</b>NPC 機器人會策略包夾並主動撞擊第一名！<br>
-                   🚫 <b>跳躍：</b>只能在地面上起跳，<b>無法在其他玩家頭頂上踩踏起跳！</b><br>
-                   ⚡ <b>衝刺：</b>按住 <b>Shift 鍵</b> / <b>滑鼠右鍵</b> 可加速 (體積需 &gt; 20，衝刺時會消耗微量能量體積)。<br>
-                   ☠️ <b>出界：</b>掉出邊界會變回最小體型並重新掉落。</p>
+                <p>🟢 <b>成長：</b>收集藍色光點變大。體積越大速度越慢，但更重難以被擊退。<br>
+                   💥 <b>碰撞：</b>體型大於對手 10% 即可將其撞開！<br>
+                   ⚔️ <b>反擊：</b>小球使用「衝刺」撞擊沒衝刺的大球，也能產生衝擊力將大球推開！<br>
+                   🔴 <b>紅刺：</b>實體障礙物。巨球的夢魘！體積過大時撞到紅色尖刺會<b>瞬間損失 20% 能量</b>並被強烈彈開！<br>
+                   ⚡ <b>衝刺：</b>按 <b>Shift</b> / <b>右鍵</b> 加速。體積越大衝刺消耗越快、加速效果越差。<br>
                 
                 <div class="divider" style="margin: 15px 0;">操作</div>
                 
                 <h3 style="color: #38bdf8;">🎮 操作方式</h3>
-                <p style="margin-bottom: 0;">🖱️ <b>滑鼠：</b>控制視角 / <b>右鍵：</b>衝刺<br>
+                <p style="margin-bottom: 0;">🖱️ <b>滑鼠移動：</b>轉動視角 &nbsp;|&nbsp; 🖱️ <b>滑鼠右鍵：</b>衝刺<br>
                    ⌨️ <b>W A S D：</b>移動 &nbsp;|&nbsp; 🚀 <b>空白鍵：</b>跳躍<br>
                    ⚡ <b>Shift 鍵：</b>衝刺 &nbsp;|&nbsp; ⚙️ <b>ESC：</b>開啟設定</p>
             </div>
@@ -413,6 +451,31 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
+        // --- Custom UI Toast Notifications ---
+        function showToast(message, isSuccess = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (isSuccess) toast.classList.add('success');
+            toast.innerText = message;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => toast.classList.add('show'));
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function highlightInputError(inputId) {
+            const input = document.getElementById(inputId);
+            input.classList.remove('shake-error');
+            void input.offsetWidth; // Trigger reflow to restart animation
+            input.classList.add('shake-error');
+            setTimeout(() => input.classList.remove('shake-error'), 400);
+        }
+
         // --- Socket.io 連線與基礎設定 ---
         const backendUrl = 'https://sphere-war.onrender.com';
         const socket = io(backendUrl, { autoConnect: true });
@@ -456,6 +519,10 @@
         const pelletGeo = new THREE.SphereGeometry(1, 8, 8);       
         const pelletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
 
+        // 尖刺模型準備
+        const spikeGeo = new THREE.ConeGeometry(15, 40, 16);
+        const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.4, metalness: 0.5 });
+
         // --- Texture Generation ---
         const ballTexCanvas = document.createElement('canvas');
         ballTexCanvas.width = 512;
@@ -488,9 +555,10 @@
         ballPattern.repeat.set(4, 2); 
 
         // --- Core State Variables ---
-        const WORLD_SIZE = 800; // 已修復：補上遺失的 WORLD_SIZE 宣告
-        let gameState = { players: {}, pellets: [] };
-        const meshes = { players: {}, pellets: [] };
+        const WORLD_SIZE = 800; 
+        const SPIKE_RADIUS = 15; // 新增尖刺的實體半徑
+        let gameState = { players: {}, pellets: [], spikes: [] };
+        const meshes = { players: {}, pellets: [], spikes: [] };
         const nameTagsDOM = {}; 
 
         let yaw = 0;   
@@ -506,9 +574,9 @@
         function singlePlayerLoop() {
             let players = localGameState.players;
             let pellets = localGameState.pellets;
+            let spikes = localGameState.spikes;
             let difficultyLevel = parseInt(document.getElementById('npc-difficulty-select').value);
 
-            // 1. 動態尋找目前的「第一名（Leader）」是誰 (體積/半徑最大者)
             let leaderId = null;
             let maxRadius = -Infinity;
             for (let id in players) {
@@ -518,14 +586,12 @@
                 }
             }
 
-            // 2. AI 思考與決策 (優先圍剿第一名)
             for (let id in players) {
-                if (id === myId) continue; // 玩家不交由 AI 控制
+                if (id === myId) continue; 
                 let p = players[id];
                 let targetX = null, targetZ = null;
                 let wantsToDash = false;
 
-                // 搜尋最近的光點 (保底成長路徑)
                 let closestPellet = null;
                 let minPelletDist = Infinity;
                 for(let i=0; i<pellets.length; i++) {
@@ -533,37 +599,46 @@
                     if (d < minPelletDist) { minPelletDist = d; closestPellet = pellets[i]; }
                 }
 
-                // 如果場上有第一名，且自己不是第一名，則啟動圍剿演算法
                 if (leaderId && id !== leaderId) {
                     let leader = players[leaderId];
                     let distToLeader = Math.hypot(p.x - leader.x, p.z - leader.z);
 
-                    // 根據單人設定的難度計算圍剿機率
                     let gangUpProb = 0;
-                    if (difficultyLevel === 3) gangUpProb = 0.85; // 困難：極強攻擊性，幾乎鎖定第一名
-                    else if (difficultyLevel === 2) gangUpProb = 0.50; // 普通：半數時間前往包圍第一名
-                    else if (difficultyLevel === 1) gangUpProb = 0.15; // 簡單：隨機性大，極少會去包圍
+                    if (difficultyLevel === 3) gangUpProb = 0.85; 
+                    else if (difficultyLevel === 2) gangUpProb = 0.50; 
+                    else if (difficultyLevel === 1) gangUpProb = 0.15; 
 
                     if (Math.random() < gangUpProb || distToLeader < 300) {
                         targetX = leader.x;
                         targetZ = leader.z;
-                        
-                        // 困難難度下：若進入攻擊範圍且能量足夠，自動噴射衝刺(Dash)撞擊！
                         if (difficultyLevel === 3 && distToLeader < 250 && p.radius > 20) {
                             wantsToDash = true;
                         }
                     }
                 }
 
-                // 若不觸發圍剿，或自己就是第一名，則穩定朝向最近的食物移動
-                if (targetX === null && closestPellet) {
+                // AI 簡易避開尖刺
+                let avoidingSpike = false;
+                if (p.radius > 40) {
+                    for(let i=0; i<spikes.length; i++) {
+                        let d = Math.hypot(p.x - spikes[i].x, p.z - spikes[i].z);
+                        if (d < p.radius + 60) { // 預判範圍
+                            targetX = p.x + (p.x - spikes[i].x);
+                            targetZ = p.z + (p.z - spikes[i].z);
+                            avoidingSpike = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!avoidingSpike && targetX === null && closestPellet) {
                     targetX = closestPellet.x;
                     targetZ = closestPellet.z;
                 }
 
                 if (targetX !== null && targetZ !== null) {
                     let angle = Math.atan2(targetZ - p.z, targetX - p.x);
-                    if (difficultyLevel === 1) angle += (Math.random() - 0.5) * 0.4; // 簡單 AI 走路會抖動
+                    if (difficultyLevel === 1) angle += (Math.random() - 0.5) * 0.4; 
                     p.input.dx = Math.cos(angle); 
                     p.input.dz = Math.sin(angle);
                 } else {
@@ -573,22 +648,28 @@
 
                 p.input.dash = wantsToDash;
                 
-                // 隨機跳躍
                 if (p.isGrounded && Math.random() < (difficultyLevel * 0.004)) {
                     p.input.jump = true;
                 }
             }
 
-            // 3. 物理狀態計算 (Dash 與移動)
+            // 移動與物理
             for (let id in players) {
                 let p = players[id];
                 let input = p.input;
 
                 let isDashing = input.dash && p.radius > 20;
-                let speed = isDashing ? 14 : 7; 
+
+                // 體積動態數值調整
+                let sizeFactor = Math.max(0, p.radius - 20); 
+                let baseSpeed = Math.max(3, 8 - sizeFactor * 0.025); 
+                let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.004); 
+                let dashCost = 0.05 + sizeFactor * 0.002;
+
+                let speed = isDashing ? baseSpeed * dashMult : baseSpeed; 
 
                 if (isDashing) {
-                    p.radius -= 0.05; 
+                    p.radius -= dashCost; 
                     if (p.radius < 20) p.radius = 20;
                 }
 
@@ -598,27 +679,23 @@
                 p.y += p.vy; 
                 p.isGrounded = false;
                 
-                // 地面碰撞：只有在真正的地表 (y <= p.radius + 0.1) 才能起跳
                 if (Math.abs(p.x) <= WORLD_SIZE && Math.abs(p.z) <= WORLD_SIZE) {
                     if (p.y <= p.radius) { 
-                        p.y = p.radius; 
-                        p.vy = 0; 
-                        p.isGrounded = true; // 鎖定地面起跳標籤
+                        p.y = p.radius; p.vy = 0; p.isGrounded = true; 
                     }
                 }
                 
                 if (input.jump && p.isGrounded) { 
-                    p.vy = 25; 
-                    p.input.jump = false; 
+                    p.vy = 25; p.input.jump = false; 
                 }
             }
 
-            // 4. 吃光點
+            // 吃光點
             for (let id in players) {
                 let p = players[id];
                 for (let i = pellets.length - 1; i >= 0; i--) {
                     let dist = Math.hypot(p.x - pellets[i].x, p.y - pellets[i].y, p.z - pellets[i].z);
-                    if (dist < p.radius) {
+                    if (dist < p.radius + 15) {
                         pellets.splice(i, 1); 
                         p.radius += 1;             
                         pellets.push({ x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 });
@@ -626,7 +703,49 @@
                 }
             }
 
-            // 5. 限制級碰撞解決：禁止彼此踩踏站立，一律進行水平(X, Z軸)分離
+            // 尖刺陷阱判定 (加入物理實體阻擋效果)
+            for (let id in players) {
+                let p = players[id];
+                for (let i = 0; i < spikes.length; i++) {
+                    let spike = spikes[i];
+                    let dist = Math.hypot(p.x - spike.x, p.z - spike.z);
+                    let minDist = p.radius + SPIKE_RADIUS;
+
+                    // 如果發生重疊 (發生物理碰撞)
+                    if (dist < minDist) {
+                        let overlap = minDist - dist;
+                        let nx = dist > 0 ? (p.x - spike.x) / dist : 1;
+                        let nz = dist > 0 ? (p.z - spike.z) / dist : 0;
+
+                        // 物理效果：強制將玩家推擠出尖刺範圍，無法穿越
+                        p.x += nx * overlap;
+                        p.z += nz * overlap;
+
+                        // 巨球懲罰判定
+                        if (p.radius > 40) { 
+                            let energy = p.radius - 20;
+                            let lostEnergy = energy * 0.2; // 損失 20% 能量
+                            p.radius -= lostEnergy;
+                            
+                            p.vy = 20;
+                            p.x += nx * 40; 
+                            p.z += nz * 40;
+
+                            let dropCount = Math.min(30, Math.floor(lostEnergy));
+                            for (let d = 0; d < dropCount; d++) {
+                                let dropAngle = Math.random() * Math.PI * 2;
+                                let dropDist = SPIKE_RADIUS + 10 + Math.random() * 60;
+                                pellets.push({
+                                    x: spike.x + Math.cos(dropAngle) * dropDist, y: 4,
+                                    z: spike.z + Math.sin(dropAngle) * dropDist
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 玩家碰撞判定
             let playerIds = Object.keys(players);
             for (let i = 0; i < playerIds.length; i++) {
                 for (let j = i + 1; j < playerIds.length; j++) {
@@ -639,33 +758,52 @@
 
                     if (dist < minDist && dist > 0) {
                         let overlap = minDist - dist;
-
-                        // 僅能由 X-Z 水平面向推擠出彼此範圍，這會強迫落到頭頂的玩家自然向側邊滑落地面，防止疊加站立
                         let hDist = Math.hypot(dx, dz);
                         let hnx = hDist > 0 ? dx / hDist : 1;
                         let hnz = hDist > 0 ? dz / hDist : 0;
 
-                        p1.x += hnx * (overlap / 2); p1.z += hnz * (overlap / 2);
-                        p2.x -= hnx * (overlap / 2); p2.z -= hnz * (overlap / 2);
-
-                        // 撞飛物理
-                        let knockbackForce = 45; 
+                        let baseForce = 200; 
                         let p1Dashing = p1.input.dash && p1.radius > 20;
                         let p2Dashing = p2.input.dash && p2.radius > 20;
 
-                        if (p1.radius > p2.radius * 1.1) {
-                            let force = p1Dashing ? knockbackForce * 1.5 : knockbackForce;
-                            p2.x -= hnx * force; p2.z -= hnz * force; p2.vy = 15;
-                        } 
-                        else if (p2.radius > p1.radius * 1.1) {
-                            let force = p2Dashing ? knockbackForce * 1.5 : knockbackForce;
-                            p1.x += hnx * force; p1.z += hnz * force; p1.vy = 15;
+                        let f1on2 = 0; 
+                        let f2on1 = 0;
+
+                        // 判斷誰是攻擊者(贏家)
+                        if (p1Dashing && !p2Dashing) {
+                            f1on2 = (p1.radius > p2.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2; 
+                        } else if (p2Dashing && !p1Dashing) {
+                            f2on1 = (p2.radius > p1.radius * 1.1) ? baseForce * 1.5 : baseForce * 1.2;
+                        } else {
+                            if (p1.radius > p2.radius * 1.1) {
+                                f1on2 = p1Dashing ? baseForce * 1.5 : baseForce;
+                            } else if (p2.radius > p1.radius * 1.1) {
+                                f2on1 = p2Dashing ? baseForce * 1.5 : baseForce;
+                            }
+                        }
+
+                        // 僅被撞擊者承受重疊排擠與擊飛力道 (攻擊者不受反作用力影響)
+                        if (f1on2 > 0) {
+                            p2.x -= hnx * overlap;
+                            p2.z -= hnz * overlap;
+                            let res2 = Math.max(0.2, 20 / p2.radius);
+                            p2.x -= hnx * (f1on2 * res2);
+                            p2.z -= hnz * (f1on2 * res2);
+                        } else if (f2on1 > 0) {
+                            p1.x += hnx * overlap;
+                            p1.z += hnz * overlap;
+                            let res1 = Math.max(0.2, 20 / p1.radius);
+                            p1.x += hnx * (f2on1 * res1);
+                            p1.z += hnz * (f2on1 * res1);
+                        } else {
+                            // 平手，雙方各自退開一半
+                            p1.x += hnx * (overlap / 2); p1.z += hnz * (overlap / 2);
+                            p2.x -= hnx * (overlap / 2); p2.z -= hnz * (overlap / 2);
                         }
                     }
                 }
             }
             
-            // 6. 掉落虛空
             for (let id in players) {
                 let p = players[id];
                 if (p.y + p.radius < 0) {
@@ -719,7 +857,7 @@
         let isPlaying = false;
         let isSinglePlayer = false;
         let spGameLoopInterval = null;
-        let localGameState = { players: {}, pellets: [] };
+        let localGameState = { players: {}, pellets: [], spikes: [] };
 
         // --- Socket Setup ---
         socket.on('connect', () => {
@@ -740,8 +878,8 @@
             btnCreateRoom.disabled = true;
             btnJoinRoom.disabled = true;
             if (isPlaying && !isSinglePlayer) {
-                alert('與伺服器失去連線！');
-                window.location.reload();
+                showToast('與伺服器失去連線！重新整理中...');
+                setTimeout(() => window.location.reload(), 2000);
             }
         });
 
@@ -775,9 +913,14 @@
         const npcCountVal = document.getElementById('npc-count-val');
         npcCountSlider.oninput = (e) => npcCountVal.innerText = e.target.value;
 
+        // 單人模式進入前檢查
         document.getElementById('btn-sp-start').onclick = () => {
-            const name = document.getElementById('sp-name-input').value.trim();
-            if (!name) return alert('請輸入玩家名稱！');
+            const nameInput = document.getElementById('sp-name-input');
+            const name = nameInput.value.trim();
+            if (!name) {
+                highlightInputError('sp-name-input');
+                return showToast('請先輸入玩家名稱！');
+            }
             isSinglePlayer = true;
             spConfigPanel.classList.add('hidden');
             tutorialPanel.classList.remove('hidden');
@@ -786,7 +929,7 @@
         // --- Start Singleplayer Game Mode ---
         function initSinglePlayer() {
             myId = myId || 'SP_PLAYER_' + Math.random().toString(36).substr(2, 5);
-            localGameState = { players: {}, pellets: [] };
+            localGameState = { players: {}, pellets: [], spikes: [] };
             
             const pName = document.getElementById('sp-name-input').value.trim();
             const pColor = document.getElementById('sp-color-input').value;
@@ -805,6 +948,13 @@
             for(let i=0; i<pelletCount; i++) {
                 localGameState.pellets.push({ 
                     x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 
+                });
+            }
+
+            for(let i=0; i<15; i++) {
+                localGameState.spikes.push({
+                    x: (Math.random() - 0.5) * WORLD_SIZE * 1.8,
+                    z: (Math.random() - 0.5) * WORLD_SIZE * 1.8
                 });
             }
 
@@ -848,6 +998,7 @@
             btnCopyRoom.style.background = 'rgba(16, 185, 129, 0.2)';
             btnCopyRoom.style.borderColor = '#10b981';
             btnCopyRoom.style.color = '#34d399';
+            showToast('已複製房間代碼！', true);
             
             setTimeout(() => {
                 btnCopyRoom.innerText = '📋 複製';
@@ -857,10 +1008,17 @@
             }, 2000);
         };
 
+        // 多人模式選擇外觀檢查
         document.getElementById('btn-start-game').onclick = () => {
-            const name = document.getElementById('name-input').value.trim();
+            const nameInput = document.getElementById('name-input');
+            const name = nameInput.value.trim();
             const color = document.getElementById('color-input').value;
-            if (!name) return alert('請先輸入玩家名稱！');
+            
+            if (!name) {
+                highlightInputError('name-input');
+                return showToast('請先輸入您的玩家暱稱！');
+            }
+            
             socket.emit('check_availability', { roomId: currentRoom, color: color, name: name });
         };
 
@@ -869,7 +1027,7 @@
                 colorPanel.classList.add('hidden');
                 tutorialPanel.classList.remove('hidden');
             } else {
-                alert(res.msg);
+                showToast(res.msg);
             }
         });
 
@@ -888,7 +1046,7 @@
         };
 
         function handleJoinError(msg) {
-            alert(msg);
+            showToast(msg);
             tutorialPanel.classList.add('hidden');
             colorPanel.classList.remove('hidden');
             const btnConfirm = document.getElementById('btn-confirm-start');
@@ -896,7 +1054,7 @@
             btnConfirm.disabled = false;
         }
 
-        socket.on('room_error', (msg) => alert(msg));
+        socket.on('room_error', (msg) => showToast(msg));
         socket.on('color_error', handleJoinError);
         socket.on('name_error', handleJoinError); 
         
@@ -1231,6 +1389,23 @@
                 }
             }
 
+            // 渲染尖刺
+            if (gameState.spikes) {
+                while (meshes.spikes.length < gameState.spikes.length) {
+                    const mesh = new THREE.Mesh(spikeGeo, spikeMat);
+                    mesh.position.y = 20; 
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    scene.add(mesh);
+                    meshes.spikes.push(mesh);
+                }
+                for (let i = 0; i < gameState.spikes.length; i++) {
+                    meshes.spikes[i].position.x = gameState.spikes[i].x;
+                    meshes.spikes[i].position.z = gameState.spikes[i].z;
+                }
+            }
+
+            // 渲染光點
             if (gameState.pellets) {
                 while (meshes.pellets.length < gameState.pellets.length) {
                     const mesh = new THREE.Mesh(pelletGeo, pelletMat);

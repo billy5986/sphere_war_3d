@@ -4,10 +4,6 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http, { cors: { origin: "*" } });
 
 let rooms = {};
-const MAX_PELLETS = 50;
-const MAX_SPIKES = 15;
-const MAX_BOOST_PADS = 8; // 新增：加速陣數量
-const WORLD_SIZE = 800; 
 const SPIKE_RADIUS = 15; // 尖刺的物理半徑
 
 // 產生隨機房間代碼
@@ -15,28 +11,28 @@ function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// 產生光點
-function spawnPellet() {
+// 產生光點 (現在需要傳入該房間的地圖大小)
+function spawnPellet(worldSize) {
     return { 
-        x: (Math.random() - 0.5) * WORLD_SIZE * 2, 
+        x: (Math.random() - 0.5) * worldSize * 2, 
         y: 4, 
-        z: (Math.random() - 0.5) * WORLD_SIZE * 2 
+        z: (Math.random() - 0.5) * worldSize * 2 
     };
 }
 
 // 產生紅色尖刺
-function spawnSpike() {
+function spawnSpike(worldSize) {
     return {
-        x: (Math.random() - 0.5) * WORLD_SIZE * 1.8,
-        z: (Math.random() - 0.5) * WORLD_SIZE * 1.8
+        x: (Math.random() - 0.5) * worldSize * 1.8,
+        z: (Math.random() - 0.5) * worldSize * 1.8
     };
 }
 
 // 產生加速陣
-function spawnBoostPad() {
+function spawnBoostPad(worldSize) {
     return {
-        x: (Math.random() - 0.5) * WORLD_SIZE * 1.6,
-        z: (Math.random() - 0.5) * WORLD_SIZE * 1.6,
+        x: (Math.random() - 0.5) * worldSize * 1.6,
+        z: (Math.random() - 0.5) * worldSize * 1.6,
         radius: 25
     };
 }
@@ -45,17 +41,37 @@ io.on('connection', (socket) => {
     console.log('新玩家連線:', socket.id);
     let currentRoom = null;
 
-    socket.on('create_room', () => {
+    // 接收房主的自訂參數
+    socket.on('create_room', (config = {}) => {
         const roomId = generateRoomCode();
-        rooms[roomId] = { players: {}, pellets: [], spikes: [], boostPads: [], usedColors: [], usedNames: [] };
         
-        for (let i = 0; i < MAX_PELLETS; i++) rooms[roomId].pellets.push(spawnPellet());
-        for (let i = 0; i < MAX_SPIKES; i++) rooms[roomId].spikes.push(spawnSpike());
-        for (let i = 0; i < MAX_BOOST_PADS; i++) rooms[roomId].boostPads.push(spawnBoostPad()); // 初始化加速陣
+        // 解析參數，若未提供則使用預設值
+        const mapSize = config.mapSize || 800;
+        const spikeCount = config.spikeCount !== undefined ? config.spikeCount : 15;
+        const boostCount = config.boostCount !== undefined ? config.boostCount : 8;
+        
+        // 依照地圖大小動態計算光點數量
+        const maxPellets = 50 + Math.floor(mapSize / 100);
+
+        rooms[roomId] = { 
+            players: {}, 
+            pellets: [], 
+            spikes: [], 
+            boostPads: [], 
+            usedColors: [], 
+            usedNames: [],
+            worldSize: mapSize,      // 將地圖大小存入該房間專屬設定
+            maxPellets: maxPellets   // 該房間最大光點數量
+        };
+        
+        for (let i = 0; i < maxPellets; i++) rooms[roomId].pellets.push(spawnPellet(mapSize));
+        for (let i = 0; i < spikeCount; i++) rooms[roomId].spikes.push(spawnSpike(mapSize));
+        for (let i = 0; i < boostCount; i++) rooms[roomId].boostPads.push(spawnBoostPad(mapSize)); 
 
         socket.join(roomId);
         currentRoom = roomId;
-        socket.emit('room_joined', roomId);
+        // 將房間代碼和地圖大小回傳給前端，讓前端同步地圖網格
+        socket.emit('room_joined', { roomId: roomId, mapSize: mapSize });
     });
 
     socket.on('join_room', (roomId) => {
@@ -63,7 +79,8 @@ io.on('connection', (socket) => {
         if (rooms[roomId]) {
             socket.join(roomId);
             currentRoom = roomId;
-            socket.emit('room_joined', roomId);
+            // 加入的玩家也需要知道該房間的地圖大小
+            socket.emit('room_joined', { roomId: roomId, mapSize: rooms[roomId].worldSize });
         } else {
             socket.emit('room_error', '找不到該房間！');
         }
@@ -89,9 +106,10 @@ io.on('connection', (socket) => {
         rooms[roomId].usedColors.push(color);
         rooms[roomId].usedNames.push(name);
         
-        // 賦予新的物理變數 (vx, vz, 特效計時器)
+        const mapSize = rooms[roomId].worldSize;
+
         rooms[roomId].players[socket.id] = {
-            x: (Math.random() - 0.5) * 500, y: 20, z: (Math.random() - 0.5) * 500,
+            x: (Math.random() - 0.5) * mapSize * 0.8, y: 20, z: (Math.random() - 0.5) * mapSize * 0.8,
             vx: 0, vy: 0, vz: 0, boostCooldown: 0, boostEffect: 0, damageEffect: 0,
             radius: 20, color: color, name: name,
             input: { dx: 0, dz: 0, jump: false, dash: false }
@@ -127,19 +145,18 @@ setInterval(() => {
         let pellets = room.pellets;
         let spikes = room.spikes;
         let boostPads = room.boostPads;
+        let worldSize = room.worldSize;
 
         // 1. 移動與物理
         for (let id in players) {
             let p = players[id];
             
-            // 確保具備物理速度與特效的變數 (防呆)
             p.vx = p.vx || 0;
             p.vz = p.vz || 0;
             p.boostCooldown = p.boostCooldown || 0;
             p.boostEffect = p.boostEffect || 0;
             p.damageEffect = p.damageEffect || 0;
 
-            // 遞減特效計時器
             if (p.boostCooldown > 0) p.boostCooldown--;
             if (p.boostEffect > 0) p.boostEffect--;
             if (p.damageEffect > 0) p.damageEffect--;
@@ -162,7 +179,6 @@ setInterval(() => {
                             bx = p.vx / vDir;
                             bz = p.vz / vDir;
                         } else {
-                            // 靜止時隨機方向衝刺
                             let angle = Math.random() * Math.PI * 2;
                             bx = Math.cos(angle);
                             bz = Math.sin(angle);
@@ -170,8 +186,8 @@ setInterval(() => {
                         
                         p.vx += bx * 45; 
                         p.vz += bz * 45;
-                        p.boostCooldown = 90; // 3 秒 CD
-                        p.boostEffect = 15;   // 0.5 秒特效
+                        p.boostCooldown = 90; 
+                        p.boostEffect = 15;   
                     }
                 }
             }
@@ -189,26 +205,22 @@ setInterval(() => {
                 if (p.radius < 20) p.radius = 20; 
             }
 
-            // A. 主動操作移動
             p.x += input.dx * speed;
             p.z += input.dz * speed;
 
-            // B. 物理慣性移動 (碰撞擊退、加速陣)
             p.x += p.vx;
             p.z += p.vz;
 
-            // C. 摩擦力 (減速)
             p.vx *= 0.85; 
             p.vz *= 0.85;
             if (Math.abs(p.vx) < 0.1) p.vx = 0;
             if (Math.abs(p.vz) < 0.1) p.vz = 0;
 
-            // 重力與跳躍
             p.vy -= 1.5; 
             p.y += p.vy;
 
             let isGrounded = false;
-            if (Math.abs(p.x) <= WORLD_SIZE && Math.abs(p.z) <= WORLD_SIZE) {
+            if (Math.abs(p.x) <= worldSize && Math.abs(p.z) <= worldSize) {
                 if (p.y <= p.radius) {
                     p.y = p.radius; p.vy = 0; isGrounded = true;
                 }
@@ -227,8 +239,8 @@ setInterval(() => {
                 if (dist < p.radius + 15) {
                     pellets.splice(i, 1);       
                     p.radius += 1;          
-                    if (pellets.length < MAX_PELLETS) {
-                        pellets.push(spawnPellet());
+                    if (pellets.length < room.maxPellets) {
+                        pellets.push(spawnPellet(worldSize));
                     }
                 }
             }
@@ -247,29 +259,24 @@ setInterval(() => {
                     let nx = dist > 0 ? (p.x - spike.x) / dist : 1;
                     let nz = dist > 0 ? (p.z - spike.z) / dist : 0;
 
-                    // 物理排擠
                     p.x += nx * overlap;
                     p.z += nz * overlap;
 
-                    // 巨球懲罰判定
                     if (p.radius > 40) {
                         let energy = p.radius - 20;
                         let lostEnergy = energy * 0.2; 
                         p.radius -= lostEnergy;
                         
                         p.vy = 20; 
-                        
-                        // 套用慣性擊退速度
                         p.vx += nx * 35; 
                         p.vz += nz * 35;
-                        p.damageEffect = 15; // 受傷紅光特效
+                        p.damageEffect = 15;
 
-                        // 噴灑光點
                         let dropCount = Math.min(30, Math.floor(lostEnergy));
                         for (let d = 0; d < dropCount; d++) {
                             let dropAngle = Math.random() * Math.PI * 2;
                             let dropDist = SPIKE_RADIUS + 10 + Math.random() * 60;
-                            if (pellets.length >= MAX_PELLETS) {
+                            if (pellets.length >= room.maxPellets) {
                                 pellets.shift();
                             }
                             pellets.push({
@@ -282,7 +289,7 @@ setInterval(() => {
             }
         }
 
-        // 4. 玩家碰撞判定 (完整物理反作用力版)
+        // 4. 玩家碰撞判定
         let playerIds = Object.keys(players);
         for (let i = 0; i < playerIds.length; i++) {
             for (let j = i + 1; j < playerIds.length; j++) {
@@ -316,7 +323,6 @@ setInterval(() => {
                         f2on1 = baseForce * 1.5;
                     }
 
-                    // 衝刺陣的強化狀態
                     if (p1.boostEffect > 0) f1on2 *= 3;
                     if (p2.boostEffect > 0) f2on1 *= 3;
 
@@ -327,16 +333,13 @@ setInterval(() => {
                     let p1OverlapRatio = p2.radius / totalRadius; 
                     let p2OverlapRatio = p1.radius / totalRadius;
 
-                    // A. 座標直接排擠 (防止球體穿透)
                     p1.x += hnx * overlap * p1OverlapRatio;
                     p1.z += hnz * overlap * p1OverlapRatio;
                     p2.x -= hnx * overlap * p2OverlapRatio;
                     p2.z -= hnz * overlap * p2OverlapRatio;
 
-                    // B. 賦予物理反作用力速度 (vx, vz)
                     p1.vx += hnx * (f2on1 * res1);
                     p1.vz += hnz * (f2on1 * res1);
-
                     p2.vx -= hnx * (f1on2 * res2);
                     p2.vz -= hnz * (f1on2 * res2);
                 }
@@ -348,13 +351,12 @@ setInterval(() => {
             let p = players[id];
             if (p.y + p.radius < 0) {
                 io.to(id).emit('you_lost', '你掉入虛空了！復活中...');
-                p.x = (Math.random() - 0.5) * WORLD_SIZE; p.z = (Math.random() - 0.5) * WORLD_SIZE;
+                p.x = (Math.random() - 0.5) * worldSize; p.z = (Math.random() - 0.5) * worldSize;
                 p.y = 100; p.vy = 0; p.radius = 20; 
-                p.vx = 0; p.vz = 0; p.boostCooldown = 0; p.boostEffect = 0; p.damageEffect = 0; // 重置狀態
+                p.vx = 0; p.vz = 0; p.boostCooldown = 0; p.boostEffect = 0; p.damageEffect = 0; 
             }
         }
 
-        // 回傳完整的遊戲狀態 (包含新增的 boostPads)
         io.to(roomId).emit('update_game_state', { players, pellets, spikes, boostPads });
     }
 }, 30);

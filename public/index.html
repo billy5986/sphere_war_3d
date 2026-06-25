@@ -90,12 +90,6 @@
             border-color: rgba(56, 189, 248, 0.4);
             box-shadow: 0 15px 30px rgba(0,0,0,0.4), 0 0 20px rgba(56, 189, 248, 0.15);
         }
-        .menu-card::before { 
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent);
-            transform: skewX(-25deg); transition: 0.6s; z-index: 1; pointer-events: none;
-        }
-        .menu-card:hover::before { left: 200%; }
 
         .menu-card h3 { margin: 0 0 8px 0; font-size: 1.15rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 8px; position: relative; z-index: 2; }
         .menu-card p { margin: 0 0 16px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; position: relative; z-index: 2; }
@@ -290,6 +284,7 @@
     </div>
 
     <div id="ui-layer">
+        <!-- 主選單 -->
         <div id="main-menu-panel" class="panel">
             <div>
                 <h1 class="game-title">Sphere War</h1>
@@ -311,6 +306,7 @@
             </div>
         </div>
 
+        <!-- 多人選單 -->
         <div id="multiplayer-panel" class="panel hidden">
             <h1 class="game-title" style="font-size: 2.2rem;">多人連線</h1>
             <div class="game-subtitle" style="margin-bottom: 15px;">Multiplayer</div>
@@ -336,20 +332,64 @@
             <button id="btn-mp-back" class="danger" style="margin-top: 15px; padding: 12px;">返回主選單</button>
         </div>
 
-        <div id="sp-config-panel" class="panel hidden">
-            <h1 class="game-title" style="font-size: 2.2rem;">單人設定</h1>
-            <div class="game-subtitle" style="margin-bottom: 20px;">Local Arena</div>
+        <!-- 多人房間設定面板 -->
+        <div id="mp-settings-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">房間設定</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Room Settings</div>
+            
+            <div class="control-label"><span>地圖大小</span><span id="mp-map-size-val">800</span></div>
+            <input type="range" id="mp-map-size-slider" min="400" max="2000" step="100" value="800">
+
+            <div class="control-label"><span>尖刺數量</span><span id="mp-spike-count-val">15</span></div>
+            <input type="range" id="mp-spike-count-slider" min="0" max="50" value="15">
+
+            <div class="control-label"><span>加速陣數量</span><span id="mp-boost-count-val">8</span></div>
+            <input type="range" id="mp-boost-count-slider" min="0" max="30" value="8">
+            
+            <div class="menu-grid" style="margin-top: 25px;">
+                <button id="btn-mp-settings-create" class="primary">創建並進入</button>
+                <button id="btn-mp-settings-back" class="danger">返回</button>
+            </div>
+        </div>
+
+        <!-- 外觀設定面板 (共用) -->
+        <div id="color-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">選擇外觀</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Customize</div>
+
+            <div id="room-info-container" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 25px;">
+                <p id="room-id-display" style="font-size: 1.1rem; color: #94a3b8; font-weight: 700; margin: 0;">房間代碼: </p>
+                <button id="btn-copy-room" style="width: auto; padding: 6px 14px; margin: 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: none; border-radius: 8px; font-size: 0.85rem; color: #e2e8f0;">📋 複製</button>
+            </div>
             
             <div class="control-label">玩家暱稱</div>
-            <input type="text" id="sp-name-input" placeholder="輸入名稱 (1-8字)" maxlength="8" value="玩家1號">
+            <input type="text" id="name-input" placeholder="輸入名稱 (1-8字)" maxlength="8" value="玩家1號">
             
             <div class="control-label">代表顏色</div>
-            <input type="color" id="sp-color-input" value="#38bdf8">
+            <input type="color" id="color-input" value="#f43f5e">
             
-            <div class="divider">遊戲參數</div>
+            <div class="menu-grid" style="margin-top: 15px;">
+                <button id="btn-start-game" class="primary">下一步</button>
+                <button id="btn-color-back" class="danger">返回</button>
+            </div>
+        </div>
+
+        <!-- 單人遊戲參數面板 -->
+        <div id="sp-settings-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">單人設定</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Game Rules</div>
+            
+            <div class="control-label"><span>地圖大小</span><span id="map-size-val">800</span></div>
+            <input type="range" id="map-size-slider" min="400" max="2000" step="100" value="800">
 
             <div class="control-label"><span>NPC 數量</span><span id="npc-count-val">15</span></div>
             <input type="range" id="npc-count-slider" min="1" max="50" value="15">
+
+            <div class="control-label"><span>尖刺數量</span><span id="spike-count-val">15</span></div>
+            <input type="range" id="spike-count-slider" min="0" max="50" value="15">
+
+            <div class="control-label"><span>加速陣數量</span><span id="boost-count-val">8</span></div>
+            <input type="range" id="boost-count-slider" min="0" max="30" value="8">
             
             <div class="control-label">NPC 難度 (AI)</div>
             <select id="npc-difficulty-select">
@@ -359,29 +399,12 @@
             </select>
             
             <div class="menu-grid" style="margin-top: 15px;">
-                <button id="btn-sp-start" class="success">準備完畢</button>
-                <button id="btn-sp-back" class="danger">返回主選單</button>
+                <button id="btn-sp-settings-next" class="success">下一步</button>
+                <button id="btn-sp-settings-back" class="danger">返回主選單</button>
             </div>
         </div>
 
-        <div id="color-panel" class="panel hidden">
-            <h1 class="game-title" style="font-size: 2.2rem;">選擇外觀</h1>
-            <div class="game-subtitle" style="margin-bottom: 20px;">Customize</div>
-
-            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 25px;">
-                <p id="room-id-display" style="font-size: 1.1rem; color: #94a3b8; font-weight: 700; margin: 0;">房間代碼: </p>
-                <button id="btn-copy-room" style="width: auto; padding: 6px 14px; margin: 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: none; border-radius: 8px; font-size: 0.85rem; color: #e2e8f0;">📋 複製</button>
-            </div>
-            
-            <div class="control-label">玩家暱稱</div>
-            <input type="text" id="name-input" placeholder="輸入名稱 (1-8字)" maxlength="8">
-            
-            <div class="control-label">代表顏色</div>
-            <input type="color" id="color-input" value="#f43f5e">
-            
-            <button id="btn-start-game" class="primary" style="margin-top: 10px;">下一步</button>
-        </div>
-
+        <!-- 教學面板 -->
         <div id="tutorial-panel" class="panel hidden">
             <h1 class="game-title" style="font-size: 2.2rem;">玩法介紹</h1>
             <div class="game-subtitle" style="margin-bottom: 20px;">How to play</div>
@@ -406,6 +429,7 @@
         </div>
     </div>
 
+    <!-- 遊戲中暫停設定 -->
     <div id="settings-overlay">
         <div class="panel">
             <h2 class="game-title" style="font-size: 2.2rem; margin-bottom: 10px;">設定</h2>
@@ -426,6 +450,7 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
+        // --- 輔助函數 ---
         function showToast(message, isSuccess = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -433,9 +458,7 @@
             if (isSuccess) toast.classList.add('success');
             toast.innerText = message;
             container.appendChild(toast);
-
             requestAnimationFrame(() => toast.classList.add('show'));
-
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
@@ -453,6 +476,7 @@
         const backendUrl = 'https://sphere-war.onrender.com';
         const socket = io(backendUrl, { autoConnect: true });
 
+        // --- Three.js 初始化 ---
         const canvas = document.getElementById('gameCanvas');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0f172a); 
@@ -476,67 +500,73 @@
         dirLight.shadow.camera.right = 400;
         scene.add(dirLight);
 
-        const groundGeo = new THREE.PlaneGeometry(1600, 1600);
+        let worldSize = 800; // 地圖邊界大小 (動態)
+        
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
+        let ground = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        const gridHelper = new THREE.GridHelper(1600, 60, 0x334155, 0x1e293b);
+        let gridHelper = new THREE.GridHelper(1600, 60, 0x334155, 0x1e293b);
         gridHelper.position.y = 0.1;
         scene.add(gridHelper);
+
+        function updateWorldSize(size) {
+            if (ground) {
+                ground.geometry.dispose();
+                ground.geometry = new THREE.PlaneGeometry(size * 2, size * 2);
+            }
+            if (gridHelper) {
+                scene.remove(gridHelper);
+                gridHelper.geometry.dispose();
+                gridHelper.material.dispose();
+            }
+            const divisions = Math.max(10, Math.floor(size / 13)); 
+            gridHelper = new THREE.GridHelper(size * 2, divisions, 0x334155, 0x1e293b);
+            gridHelper.position.y = 0.1;
+            scene.add(gridHelper);
+        }
 
         const baseSphereGeo = new THREE.SphereGeometry(1, 32, 32); 
         const pelletGeo = new THREE.SphereGeometry(1, 8, 8);       
         const pelletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-
         const spikeGeo = new THREE.ConeGeometry(15, 40, 16);
         const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.4, metalness: 0.5 });
-        
         const boostPadGeo = new THREE.CylinderGeometry(25, 25, 1, 32);
         const boostPadMat = new THREE.MeshStandardMaterial({ 
             color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.6, transparent: true, opacity: 0.8 
         });
 
+        // 動態生成球體紋理
         const ballTexCanvas = document.createElement('canvas');
-        ballTexCanvas.width = 512;
-        ballTexCanvas.height = 512;
+        ballTexCanvas.width = 512; ballTexCanvas.height = 512;
         const ctx = ballTexCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff'; 
-        ctx.fillRect(0, 0, 512, 512);
-        
-        ctx.strokeStyle = '#cbd5e1'; 
-        ctx.lineWidth = 12;
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 512, 512);
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 12;
         ctx.beginPath();
         for(let i=0; i<=512; i+=64) {
             ctx.moveTo(i, 0); ctx.lineTo(i, 512);
             ctx.moveTo(0, i); ctx.lineTo(512, i);
         }
         ctx.stroke();
-        
         ctx.fillStyle = '#475569';
         for(let i=0; i<=512; i+=64) {
             for(let j=0; j<=512; j+=64) {
-                ctx.beginPath();
-                ctx.arc(i, j, 8, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(i, j, 8, 0, Math.PI * 2); ctx.fill();
             }
         }
-        
         const ballPattern = new THREE.CanvasTexture(ballTexCanvas);
-        ballPattern.wrapS = THREE.RepeatWrapping;
-        ballPattern.wrapT = THREE.RepeatWrapping;
+        ballPattern.wrapS = THREE.RepeatWrapping; ballPattern.wrapT = THREE.RepeatWrapping;
         ballPattern.repeat.set(4, 2); 
 
-        const WORLD_SIZE = 800; 
+        // --- 狀態管理 ---
         const SPIKE_RADIUS = 15; 
         let gameState = { players: {}, pellets: [], spikes: [], boostPads: [] };
         const meshes = { players: {}, pellets: [], spikes: [], boostPads: [] };
         const nameTagsDOM = {}; 
 
-        let yaw = 0;   
-        let pitch = 0; 
+        let yaw = 0, pitch = 0; 
         const keys = { w: false, a: false, s: false, d: false, ' ': false, shift: false };
         let mouseRightClickDash = false;
         let justJumped = false;
@@ -560,6 +590,7 @@
                 }
             }
 
+            // AI 控制
             for (let id in players) {
                 if (id === myId) continue; 
                 let p = players[id];
@@ -577,17 +608,12 @@
                     let leader = players[leaderId];
                     let distToLeader = Math.hypot(p.x - leader.x, p.z - leader.z);
 
-                    let gangUpProb = 0;
-                    if (difficultyLevel === 3) gangUpProb = 0.85; 
-                    else if (difficultyLevel === 2) gangUpProb = 0.50; 
-                    else if (difficultyLevel === 1) gangUpProb = 0.15; 
+                    let gangUpProb = (difficultyLevel === 3) ? 0.85 : (difficultyLevel === 2 ? 0.50 : 0.15); 
 
                     if (Math.random() < gangUpProb || distToLeader < 300) {
                         targetX = leader.x;
                         targetZ = leader.z;
-                        if (difficultyLevel === 3 && distToLeader < 250 && p.radius > 20) {
-                            wantsToDash = true;
-                        }
+                        if (difficultyLevel === 3 && distToLeader < 250 && p.radius > 20) wantsToDash = true;
                     }
                 }
 
@@ -605,8 +631,7 @@
                 }
 
                 if (!avoidingSpike && targetX === null && closestPellet) {
-                    targetX = closestPellet.x;
-                    targetZ = closestPellet.z;
+                    targetX = closestPellet.x; targetZ = closestPellet.z;
                 }
 
                 if (targetX !== null && targetZ !== null) {
@@ -615,59 +640,40 @@
                     p.input.dx = Math.cos(angle); 
                     p.input.dz = Math.sin(angle);
                 } else {
-                    p.input.dx = 0; 
-                    p.input.dz = 0;
+                    p.input.dx = 0; p.input.dz = 0;
                 }
-
                 p.input.dash = wantsToDash;
-                
-                if (p.isGrounded && Math.random() < (difficultyLevel * 0.004)) {
-                    p.input.jump = true;
-                }
+                if (p.isGrounded && Math.random() < (difficultyLevel * 0.004)) p.input.jump = true;
             }
 
+            // 物理與位移
             for (let id in players) {
                 let p = players[id];
-                
-                p.vx = p.vx || 0;
-                p.vz = p.vz || 0;
+                p.vx = p.vx || 0; p.vz = p.vz || 0;
                 p.boostCooldown = p.boostCooldown || 0;
-                p.boostEffect = p.boostEffect || 0;
-                p.damageEffect = p.damageEffect || 0;
+                p.boostEffect = p.boostEffect || 0; p.damageEffect = p.damageEffect || 0;
 
                 if (p.boostCooldown > 0) p.boostCooldown--;
                 if (p.boostEffect > 0) p.boostEffect--;
                 if (p.damageEffect > 0) p.damageEffect--;
                 
+                // 加速陣觸發
                 for (let i = 0; i < boostPads.length; i++) {
                     let pad = boostPads[i];
                     if (Math.hypot(p.x - pad.x, p.z - pad.z) < p.radius + pad.radius) {
                         if (p.boostCooldown <= 0) {
                             let speedDir = Math.hypot(p.input.dx, p.input.dz);
                             let bx = 0, bz = 0;
-                            
                             if (speedDir > 0) {
-                                bx = (p.input.dx / speedDir);
-                                bz = (p.input.dz / speedDir);
+                                bx = (p.input.dx / speedDir); bz = (p.input.dz / speedDir);
                             } else if (p.vx !== 0 || p.vz !== 0) {
-                                let vDir = Math.hypot(p.vx, p.vz);
-                                bx = p.vx / vDir;
-                                bz = p.vz / vDir;
+                                let vDir = Math.hypot(p.vx, p.vz); bx = p.vx / vDir; bz = p.vz / vDir;
                             } else {
-                                if (id === myId) {
-                                    bx = -Math.sin(yaw);
-                                    bz = -Math.cos(yaw);
-                                } else {
-                                    let angle = Math.random() * Math.PI * 2;
-                                    bx = Math.cos(angle);
-                                    bz = Math.sin(angle);
-                                }
+                                if (id === myId) { bx = -Math.sin(yaw); bz = -Math.cos(yaw); } 
+                                else { let angle = Math.random() * Math.PI * 2; bx = Math.cos(angle); bz = Math.sin(angle); }
                             }
-                            
-                            p.vx += bx * 45; 
-                            p.vz += bz * 45;
-                            p.boostCooldown = 90; 
-                            p.boostEffect = 15;   
+                            p.vx += bx * 45; p.vz += bz * 45;
+                            p.boostCooldown = 90; p.boostEffect = 15;   
                         }
                     }
                 }
@@ -679,53 +685,37 @@
                 let baseSpeed = Math.max(3, 8 - Math.sqrt(sizeFactor) * 0.41); 
                 let dashMult = Math.max(1.2, 2.0 - sizeFactor * 0.0053); 
                 let dashCost = 0.05 + sizeFactor * 0.0026;
-
                 let speed = isDashing ? baseSpeed * dashMult : baseSpeed; 
 
-                if (isDashing) {
-                    p.radius -= dashCost; 
-                    if (p.radius < 20) p.radius = 20;
-                }
+                if (isDashing) { p.radius -= dashCost; if (p.radius < 20) p.radius = 20; }
 
-                p.x += input.dx * speed; 
-                p.z += input.dz * speed;
-                
-                p.x += p.vx;
-                p.z += p.vz;
-                
-                p.vx *= 0.85; 
-                p.vz *= 0.85;
-                
+                p.x += input.dx * speed + p.vx; 
+                p.z += input.dz * speed + p.vz;
+                p.vx *= 0.85; p.vz *= 0.85;
                 if (Math.abs(p.vx) < 0.1) p.vx = 0;
                 if (Math.abs(p.vz) < 0.1) p.vz = 0;
 
-                p.vy -= 1.5; 
-                p.y += p.vy; 
-                p.isGrounded = false;
+                p.vy -= 1.5; p.y += p.vy; p.isGrounded = false;
                 
-                if (Math.abs(p.x) <= WORLD_SIZE && Math.abs(p.z) <= WORLD_SIZE) {
-                    if (p.y <= p.radius) { 
-                        p.y = p.radius; p.vy = 0; p.isGrounded = true; 
-                    }
+                if (Math.abs(p.x) <= worldSize && Math.abs(p.z) <= worldSize) {
+                    if (p.y <= p.radius) { p.y = p.radius; p.vy = 0; p.isGrounded = true; }
                 }
                 
-                if (input.jump && p.isGrounded) { 
-                    p.vy = 25; p.input.jump = false; 
-                }
+                if (input.jump && p.isGrounded) { p.vy = 25; p.input.jump = false; }
             }
 
+            // 吃食物
             for (let id in players) {
                 let p = players[id];
                 for (let i = pellets.length - 1; i >= 0; i--) {
-                    let dist = Math.hypot(p.x - pellets[i].x, p.y - pellets[i].y, p.z - pellets[i].z);
-                    if (dist < p.radius + 15) {
-                        pellets.splice(i, 1); 
-                        p.radius += 1;             
-                        pellets.push({ x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 });
+                    if (Math.hypot(p.x - pellets[i].x, p.y - pellets[i].y, p.z - pellets[i].z) < p.radius + 15) {
+                        pellets.splice(i, 1); p.radius += 1;             
+                        pellets.push({ x: (Math.random() - 0.5) * worldSize * 2, y: 4, z: (Math.random() - 0.5) * worldSize * 2 });
                     }
                 }
             }
 
+            // 尖刺碰撞
             for (let id in players) {
                 let p = players[id];
                 for (let i = 0; i < spikes.length; i++) {
@@ -737,44 +727,34 @@
                         let overlap = minDist - dist;
                         let nx = dist > 0 ? (p.x - spike.x) / dist : 1;
                         let nz = dist > 0 ? (p.z - spike.z) / dist : 0;
-
-                        p.x += nx * overlap;
-                        p.z += nz * overlap;
+                        p.x += nx * overlap; p.z += nz * overlap;
 
                         if (p.radius > 40) { 
-                            let energy = p.radius - 20;
-                            let lostEnergy = energy * 0.2; 
+                            let lostEnergy = (p.radius - 20) * 0.2; 
                             p.radius -= lostEnergy;
-                            
-                            p.vy = 20; 
-                            
-                            p.vx += nx * 35; 
-                            p.vz += nz * 35;
-
+                            p.vy = 20; p.vx += nx * 35; p.vz += nz * 35;
                             p.damageEffect = 15;
 
                             let dropCount = Math.min(30, Math.floor(lostEnergy));
                             for (let d = 0; d < dropCount; d++) {
                                 let dropAngle = Math.random() * Math.PI * 2;
                                 let dropDist = SPIKE_RADIUS + 10 + Math.random() * 60;
-                                pellets.push({
-                                    x: spike.x + Math.cos(dropAngle) * dropDist, y: 4,
-                                    z: spike.z + Math.sin(dropAngle) * dropDist
-                                });
+                                pellets.push({ x: spike.x + Math.cos(dropAngle) * dropDist, y: 4, z: spike.z + Math.sin(dropAngle) * dropDist });
                             }
                         }
                     }
                 }
             }
 
+            // 玩家碰撞推擠
             let playerIds = Object.keys(players);
             for (let i = 0; i < playerIds.length; i++) {
                 for (let j = i + 1; j < playerIds.length; j++) {
                     let p1 = players[playerIds[i]], p2 = players[playerIds[j]];
                     if (!p1 || !p2) continue;
 
-                    let dx = p1.x - p2.x, dy = p1.y - p2.y, dz = p1.z - p2.z;
-                    let dist = Math.hypot(dx, dy, dz);
+                    let dx = p1.x - p2.x, dz = p1.z - p2.z;
+                    let dist = Math.hypot(dx, p1.y - p2.y, dz);
                     let minDist = p1.radius + p2.radius;
 
                     if (dist < minDist && dist > 0) {
@@ -787,21 +767,13 @@
                         let p1Dashing = p1.input.dash && p1.radius > 20;
                         let p2Dashing = p2.input.dash && p2.radius > 20;
 
-                        let f1on2 = baseForce; 
-                        let f2on1 = baseForce;
+                        let f1on2 = baseForce, f2on1 = baseForce;
+                        let f1Mult = (playerIds[i] === myId) ? 2 : 2.5;
+                        let f2Mult = (playerIds[j] === myId) ? 2 : 2.5;
 
-                        // 判斷是否為玩家親自施加的單方面衝刺，若是則倍率改為 2，否則保留 2.5
-                        let f1Multiplier = (playerIds[i] === myId) ? 2 : 2.5;
-                        let f2Multiplier = (playerIds[j] === myId) ? 2 : 2.5;
-
-                        if (p1Dashing && !p2Dashing) {
-                            f1on2 = baseForce * f1Multiplier; 
-                        } else if (p2Dashing && !p1Dashing) {
-                            f2on1 = baseForce * f2Multiplier;
-                        } else if (p1Dashing && p2Dashing) {
-                            f1on2 = baseForce * 1.5;
-                            f2on1 = baseForce * 1.5;
-                        }
+                        if (p1Dashing && !p2Dashing) f1on2 = baseForce * f1Mult; 
+                        else if (p2Dashing && !p1Dashing) f2on1 = baseForce * f2Mult;
+                        else if (p1Dashing && p2Dashing) { f1on2 = baseForce * 1.5; f2on1 = baseForce * 1.5; }
 
                         if (p1.boostEffect > 0) f1on2 *= 3;
                         if (p2.boostEffect > 0) f2on1 *= 3;
@@ -813,34 +785,23 @@
                         let p1OverlapRatio = p2.radius / totalRadius;
                         let p2OverlapRatio = p1.radius / totalRadius;
 
-                        p1.x += hnx * overlap * p1OverlapRatio;
-                        p1.z += hnz * overlap * p1OverlapRatio;
-                        p2.x -= hnx * overlap * p2OverlapRatio;
-                        p2.z -= hnz * overlap * p2OverlapRatio;
+                        p1.x += hnx * overlap * p1OverlapRatio; p1.z += hnz * overlap * p1OverlapRatio;
+                        p2.x -= hnx * overlap * p2OverlapRatio; p2.z -= hnz * overlap * p2OverlapRatio;
 
-                        p1.vx += hnx * (f2on1 * res1);
-                        p1.vz += hnz * (f2on1 * res1);
-
-                        p2.vx -= hnx * (f1on2 * res2);
-                        p2.vz -= hnz * (f1on2 * res2);
+                        p1.vx += hnx * (f2on1 * res1); p1.vz += hnz * (f2on1 * res1);
+                        p2.vx -= hnx * (f1on2 * res2); p2.vz -= hnz * (f1on2 * res2);
                     }
                 }
             }
             
+            // 掉落虛空
             for (let id in players) {
                 let p = players[id];
                 if (p.y + p.radius < 0) {
                     if (id === myId) showLossMessage('你掉入虛空了！復活中...');
-                    p.x = (Math.random() - 0.5) * WORLD_SIZE; 
-                    p.z = (Math.random() - 0.5) * WORLD_SIZE;
-                    p.y = 100; 
-                    p.vy = 0; 
-                    p.vx = 0; 
-                    p.vz = 0;
-                    p.boostCooldown = 0; 
-                    p.boostEffect = 0;
-                    p.damageEffect = 0;
-                    p.radius = 20; 
+                    p.x = (Math.random() - 0.5) * worldSize; p.z = (Math.random() - 0.5) * worldSize;
+                    p.y = 100; p.vy = 0; p.vx = 0; p.vz = 0;
+                    p.boostCooldown = 0; p.boostEffect = 0; p.damageEffect = 0; p.radius = 20; 
                 }
             }
 
@@ -851,10 +812,12 @@
         const uiLayer = document.getElementById('ui-layer');
         const mainMenuPanel = document.getElementById('main-menu-panel');
         const multiplayerPanel = document.getElementById('multiplayer-panel');
+        const mpSettingsPanel = document.getElementById('mp-settings-panel');
         const colorPanel = document.getElementById('color-panel');
-        const spConfigPanel = document.getElementById('sp-config-panel');
+        const spSettingsPanel = document.getElementById('sp-settings-panel');
         const tutorialPanel = document.getElementById('tutorial-panel');
         
+        const roomInfoContainer = document.getElementById('room-info-container');
         const roomIdDisplay = document.getElementById('room-id-display');
         const btnCopyRoom = document.getElementById('btn-copy-room');
         const crosshair = document.getElementById('crosshair');
@@ -864,15 +827,7 @@
         const nameTagsContainer = document.getElementById('name-tags-container');
         const touchControls = document.getElementById('touch-controls');
         
-        const btnCreateRoom = document.getElementById('btn-create-room');
-        const btnJoinRoom = document.getElementById('btn-join-room');
-        const btnShowSinglePlayer = document.getElementById('btn-show-singleplayer');
-        const btnShowMultiplayer = document.getElementById('btn-show-multiplayer');
-
-        const settingsBtn = document.getElementById('settings-btn');
         const settingsOverlay = document.getElementById('settings-overlay');
-        const btnResumeGame = document.getElementById('btn-resume-game');
-        const btnLeaveGame = document.getElementById('btn-leave-game');
         const sensitivitySlider = document.getElementById('sensitivity-slider');
         const sensitivityValue = document.getElementById('sensitivity-value');
         
@@ -881,6 +836,7 @@
 
         let currentRoom = null;
         let myId = null;
+        let isHost = false; // 新增：用來判斷玩家是否為房主
         let isPlaying = false;
         let isSinglePlayer = false;
         let spGameLoopInterval = null;
@@ -889,20 +845,20 @@
         socket.on('connect', () => {
             myId = socket.id;
             updateStatus('connected', '伺服器已連線');
-            btnCreateRoom.disabled = false;
-            btnJoinRoom.disabled = false;
+            document.getElementById('btn-create-room').disabled = false;
+            document.getElementById('btn-join-room').disabled = false;
         });
 
         socket.on('connect_error', () => {
             updateStatus('disconnected', '伺服器離線 (可玩單人)');
-            btnCreateRoom.disabled = true;
-            btnJoinRoom.disabled = true;
+            document.getElementById('btn-create-room').disabled = true;
+            document.getElementById('btn-join-room').disabled = true;
         });
 
         socket.on('disconnect', () => {
             updateStatus('disconnected', '已斷線');
-            btnCreateRoom.disabled = true;
-            btnJoinRoom.disabled = true;
+            document.getElementById('btn-create-room').disabled = true;
+            document.getElementById('btn-join-room').disabled = true;
             if (isPlaying && !isSinglePlayer) {
                 showToast('與伺服器失去連線！重新整理中...');
                 setTimeout(() => window.location.reload(), 2000);
@@ -914,7 +870,8 @@
             statusText.innerText = text;
         }
 
-        btnShowMultiplayer.onclick = () => {
+        // --- 面板切換事件 ---
+        document.getElementById('btn-show-multiplayer').onclick = () => {
             mainMenuPanel.classList.add('hidden');
             multiplayerPanel.classList.remove('hidden');
         };
@@ -924,39 +881,98 @@
             mainMenuPanel.classList.remove('hidden');
         };
 
-        btnShowSinglePlayer.onclick = () => {
+        document.getElementById('btn-show-singleplayer').onclick = () => {
+            isSinglePlayer = true;
             mainMenuPanel.classList.add('hidden');
-            spConfigPanel.classList.remove('hidden');
+            spSettingsPanel.classList.remove('hidden'); // 單人模式先顯示設定面板
+            roomInfoContainer.style.display = 'none'; // 單人不顯示房間代碼
         };
 
-        document.getElementById('btn-sp-back').onclick = () => {
-            spConfigPanel.classList.add('hidden');
-            mainMenuPanel.classList.remove('hidden');
+        // 外觀設定 -> 下一步
+        document.getElementById('btn-start-game').onclick = () => {
+            const nameInput = document.getElementById('name-input');
+            const name = nameInput.value.trim();
+            const color = document.getElementById('color-input').value;
+            
+            if (!name) {
+                highlightInputError('name-input');
+                return showToast('請先輸入您的玩家暱稱！');
+            }
+            
+            if (isSinglePlayer) {
+                colorPanel.classList.add('hidden');
+                tutorialPanel.classList.remove('hidden'); // 單人模式設定完外觀直接進教學
+            } else {
+                socket.emit('check_availability', { roomId: currentRoom, color: color, name: name });
+            }
         };
+
+        // 外觀設定 -> 返回
+        document.getElementById('btn-color-back').onclick = () => {
+            colorPanel.classList.add('hidden');
+            if (isSinglePlayer) {
+                spSettingsPanel.classList.remove('hidden'); // 單人模式返回到單人設定
+            } else {
+                socket.emit('leave_room'); // 通知後端退出房間流程
+                if (isHost) {
+                    mpSettingsPanel.classList.remove('hidden'); // 房主返回到房間設定
+                } else {
+                    multiplayerPanel.classList.remove('hidden'); // 訪客返回到多人主選單
+                }
+            }
+        };
+
+        // 單人參數滑塊連動
+        const mapSizeSlider = document.getElementById('map-size-slider');
+        const mapSizeVal = document.getElementById('map-size-val');
+        mapSizeSlider.oninput = (e) => mapSizeVal.innerText = e.target.value;
 
         const npcCountSlider = document.getElementById('npc-count-slider');
         const npcCountVal = document.getElementById('npc-count-val');
         npcCountSlider.oninput = (e) => npcCountVal.innerText = e.target.value;
 
-        document.getElementById('btn-sp-start').onclick = () => {
-            const nameInput = document.getElementById('sp-name-input');
-            const name = nameInput.value.trim();
-            if (!name) {
-                highlightInputError('sp-name-input');
-                return showToast('請先輸入玩家名稱！');
-            }
-            isSinglePlayer = true;
-            spConfigPanel.classList.add('hidden');
-            tutorialPanel.classList.remove('hidden');
+        const spikeCountSlider = document.getElementById('spike-count-slider');
+        const spikeCountVal = document.getElementById('spike-count-val');
+        spikeCountSlider.oninput = (e) => spikeCountVal.innerText = e.target.value;
+
+        const boostCountSlider = document.getElementById('boost-count-slider');
+        const boostCountVal = document.getElementById('boost-count-val');
+        boostCountSlider.oninput = (e) => boostCountVal.innerText = e.target.value;
+
+        // 多人參數滑塊連動
+        const mpMapSizeSlider = document.getElementById('mp-map-size-slider');
+        const mpMapSizeVal = document.getElementById('mp-map-size-val');
+        mpMapSizeSlider.oninput = (e) => mpMapSizeVal.innerText = e.target.value;
+
+        const mpSpikeCountSlider = document.getElementById('mp-spike-count-slider');
+        const mpSpikeCountVal = document.getElementById('mp-spike-count-val');
+        mpSpikeCountSlider.oninput = (e) => mpSpikeCountVal.innerText = e.target.value;
+
+        const mpBoostCountSlider = document.getElementById('mp-boost-count-slider');
+        const mpBoostCountVal = document.getElementById('mp-boost-count-val');
+        mpBoostCountSlider.oninput = (e) => mpBoostCountVal.innerText = e.target.value;
+
+        // 單人設定 -> 下一步 / 返回
+        document.getElementById('btn-sp-settings-next').onclick = () => {
+            spSettingsPanel.classList.add('hidden');
+            colorPanel.classList.remove('hidden'); // 前往外觀設定
+        };
+
+        document.getElementById('btn-sp-settings-back').onclick = () => {
+            spSettingsPanel.classList.add('hidden');
+            mainMenuPanel.classList.remove('hidden'); // 返回主選單
         };
 
         function initSinglePlayer() {
             myId = myId || 'SP_PLAYER_' + Math.random().toString(36).substr(2, 5);
             localGameState = { players: {}, pellets: [], spikes: [], boostPads: [] };
             
-            const pName = document.getElementById('sp-name-input').value.trim();
-            const pColor = document.getElementById('sp-color-input').value;
+            const pName = document.getElementById('name-input').value.trim() || '玩家1號';
+            const pColor = document.getElementById('color-input').value;
             const npcCount = parseInt(npcCountSlider.value);
+            
+            worldSize = parseInt(mapSizeSlider.value);
+            updateWorldSize(worldSize);
             
             localGameState.players[myId] = createLocalPlayer(pName, pColor);
             
@@ -967,24 +983,26 @@
                 localGameState.players['BOT_' + i] = createLocalPlayer(bName, bColor);
             }
 
-            const pelletCount = 50 + (npcCount * 5);
+            const pelletCount = 50 + (npcCount * 5) + Math.floor(worldSize / 100);
             for(let i=0; i<pelletCount; i++) {
                 localGameState.pellets.push({ 
-                    x: (Math.random() - 0.5) * WORLD_SIZE * 2, y: 4, z: (Math.random() - 0.5) * WORLD_SIZE * 2 
+                    x: (Math.random() - 0.5) * worldSize * 2, y: 4, z: (Math.random() - 0.5) * worldSize * 2 
                 });
             }
 
-            for(let i=0; i<15; i++) {
+            const spikeCount = parseInt(spikeCountSlider.value);
+            for(let i=0; i<spikeCount; i++) {
                 localGameState.spikes.push({
-                    x: (Math.random() - 0.5) * WORLD_SIZE * 1.8,
-                    z: (Math.random() - 0.5) * WORLD_SIZE * 1.8
+                    x: (Math.random() - 0.5) * worldSize * 1.8,
+                    z: (Math.random() - 0.5) * worldSize * 1.8
                 });
             }
 
-            for(let i=0; i<8; i++) {
+            const boostCount = parseInt(boostCountSlider.value);
+            for(let i=0; i<boostCount; i++) {
                 localGameState.boostPads.push({
-                    x: (Math.random() - 0.5) * WORLD_SIZE * 1.6,
-                    z: (Math.random() - 0.5) * WORLD_SIZE * 1.6,
+                    x: (Math.random() - 0.5) * worldSize * 1.6,
+                    z: (Math.random() - 0.5) * worldSize * 1.6,
                     radius: 25
                 });
             }
@@ -995,25 +1013,58 @@
 
         function createLocalPlayer(name, color) {
             return {
-                x: (Math.random() - 0.5) * 800, y: 50, z: (Math.random() - 0.5) * 800,
+                x: (Math.random() - 0.5) * worldSize, y: 50, z: (Math.random() - 0.5) * worldSize,
                 vx: 0, vy: 0, vz: 0, boostCooldown: 0, boostEffect: 0, damageEffect: 0,
                 radius: 20, color: color, name: name,
                 input: { dx: 0, dz: 0, jump: false, dash: false }, isGrounded: false
             };
         }
 
-        btnCreateRoom.onclick = () => { socket.emit('create_room'); };
+        document.getElementById('btn-create-room').onclick = () => { 
+            multiplayerPanel.classList.add('hidden');
+            mpSettingsPanel.classList.remove('hidden');
+        };
 
-        btnJoinRoom.onclick = () => {
+        document.getElementById('btn-mp-settings-create').onclick = () => {
+            isHost = true; // 標記為房主
+            const config = {
+                mapSize: parseInt(mpMapSizeSlider.value),
+                spikeCount: parseInt(mpSpikeCountSlider.value),
+                boostCount: parseInt(mpBoostCountSlider.value)
+            };
+            socket.emit('create_room', config);
+        };
+
+        document.getElementById('btn-mp-settings-back').onclick = () => {
+            mpSettingsPanel.classList.add('hidden');
+            multiplayerPanel.classList.remove('hidden');
+        };
+
+        document.getElementById('btn-join-room').onclick = () => {
+            isHost = false; // 標記為訪客
             const code = document.getElementById('room-input').value.trim();
             if (code) socket.emit('join_room', code);
         };
 
-        socket.on('room_joined', (roomId) => {
-            currentRoom = roomId;
+        socket.on('room_joined', (data) => {
+            isSinglePlayer = false;
+            
+            // 兼容舊版字串與新版物件回傳
+            if (typeof data === 'object') {
+                currentRoom = data.roomId;
+                worldSize = data.mapSize || 800;
+            } else {
+                currentRoom = data;
+                worldSize = 800; // 預設防呆
+            }
+            
+            updateWorldSize(worldSize); // 根據伺服器傳來的地圖大小重繪網格
+
             multiplayerPanel.classList.add('hidden');
+            mpSettingsPanel.classList.add('hidden');
             colorPanel.classList.remove('hidden');
-            roomIdDisplay.innerText = `房間代碼: ${roomId}`;
+            roomInfoContainer.style.display = 'flex';
+            roomIdDisplay.innerText = `房間代碼: ${currentRoom}`;
         });
 
         btnCopyRoom.onclick = () => {
@@ -1037,19 +1088,6 @@
                 btnCopyRoom.style.borderColor = 'rgba(255,255,255,0.2)';
                 btnCopyRoom.style.color = '#e2e8f0';
             }, 2000);
-        };
-
-        document.getElementById('btn-start-game').onclick = () => {
-            const nameInput = document.getElementById('name-input');
-            const name = nameInput.value.trim();
-            const color = document.getElementById('color-input').value;
-            
-            if (!name) {
-                highlightInputError('name-input');
-                return showToast('請先輸入您的玩家暱稱！');
-            }
-            
-            socket.emit('check_availability', { roomId: currentRoom, color: color, name: name });
         };
 
         socket.on('check_result', (res) => {
@@ -1087,14 +1125,13 @@
         socket.on('room_error', (msg) => showToast(msg));
         socket.on('color_error', handleJoinError);
         socket.on('name_error', handleJoinError); 
-        
         socket.on('game_started', startGameUI);
 
         function startGameUI() {
             uiLayer.style.opacity = '0';
             setTimeout(() => uiLayer.classList.add('hidden'), 400); 
             crosshair.style.display = 'block';
-            settingsBtn.style.display = 'block'; 
+            document.getElementById('settings-btn').style.display = 'block'; 
             document.getElementById('leaderboard').style.display = 'block'; 
             nameTagsContainer.style.display = 'block'; 
             instruction.classList.remove('hidden');
@@ -1103,11 +1140,8 @@
                 touchControls.style.display = 'flex';
                 instruction.innerText = '滑動螢幕旋轉視角 | 雙擊或觸控按鈕進行跳躍與衝刺';
             }
-
             isPlaying = true;
-            if (!isTouchDevice) {
-                document.body.requestPointerLock();
-            }
+            if (!isTouchDevice) document.body.requestPointerLock();
         }
 
         function showLossMessage(msg) {
@@ -1115,11 +1149,7 @@
             instruction.style.color = '#ef4444';
             instruction.style.fontSize = '1.8rem';
             setTimeout(() => {
-                if (isTouchDevice) {
-                    instruction.innerText = '滑動螢幕旋轉視角 | 雙擊或觸控按鈕進行跳躍與衝刺';
-                } else {
-                    instruction.innerText = '點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | Shift 鍵 衝刺';
-                }
+                instruction.innerText = isTouchDevice ? '滑動螢幕旋轉視角 | 雙擊或觸控按鈕進行跳躍與衝刺' : '點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | Shift 鍵 衝刺';
                 instruction.style.color = 'white';
                 instruction.style.fontSize = '1.05rem';
             }, 3000);
@@ -1134,22 +1164,16 @@
             }
         });
 
-        settingsBtn.onclick = () => {
-            if (!isTouchDevice && document.pointerLockElement === document.body) {
-                document.exitPointerLock();
-            } else {
-                settingsOverlay.classList.toggle('active');
-            }
+        document.getElementById('settings-btn').onclick = () => {
+            if (!isTouchDevice && document.pointerLockElement === document.body) document.exitPointerLock();
+            else settingsOverlay.classList.toggle('active');
         };
 
-        btnResumeGame.onclick = () => {
-            if (isTouchDevice) {
-                settingsOverlay.classList.remove('active');
-            } else {
-                document.body.requestPointerLock();
-            }
+        document.getElementById('btn-resume-game').onclick = () => {
+            if (isTouchDevice) settingsOverlay.classList.remove('active');
+            else document.body.requestPointerLock();
         };
-        btnLeaveGame.onclick = () => window.location.reload();
+        document.getElementById('btn-leave-game').onclick = () => window.location.reload();
 
         sensitivitySlider.oninput = (e) => {
             const val = e.target.value;
@@ -1165,9 +1189,7 @@
             }
         });
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-        
+        let touchStartX = 0, touchStartY = 0;
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.body && !isTouchDevice) {
                 yaw -= e.movementX * baseSensitivity * mouseSensitivityMultiplier;
@@ -1175,59 +1197,33 @@
                 pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
             }
         });
-
         document.addEventListener('touchstart', (e) => {
             if (isPlaying && isTouchDevice && e.touches.length === 1) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
             }
         }, { passive: true });
-
         document.addEventListener('touchmove', (e) => {
             if (isPlaying && isTouchDevice && e.touches.length === 1 && !settingsOverlay.classList.contains('active')) {
-                const dx = e.touches[0].clientX - touchStartX;
-                const dy = e.touches[0].clientY - touchStartY;
-                
-                yaw -= dx * baseSensitivity * 0.5 * mouseSensitivityMultiplier;
-                pitch += dy * baseSensitivity * 0.5 * mouseSensitivityMultiplier; 
+                yaw -= (e.touches[0].clientX - touchStartX) * baseSensitivity * 0.5 * mouseSensitivityMultiplier;
+                pitch += (e.touches[0].clientY - touchStartY) * baseSensitivity * 0.5 * mouseSensitivityMultiplier; 
                 pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
-                
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
             }
         }, { passive: true });
 
-        document.addEventListener('mousedown', (e) => {
-            if (isPlaying && e.button === 2) {
-                mouseRightClickDash = true;
-            }
-        });
-        document.addEventListener('mouseup', (e) => {
-            if (isPlaying && e.button === 2) {
-                mouseRightClickDash = false;
-            }
-        });
-        document.addEventListener('contextmenu', (e) => {
-            if (isPlaying) e.preventDefault();
-        });
+        document.addEventListener('mousedown', (e) => { if (isPlaying && e.button === 2) mouseRightClickDash = true; });
+        document.addEventListener('mouseup', (e) => { if (isPlaying && e.button === 2) mouseRightClickDash = false; });
+        document.addEventListener('contextmenu', (e) => { if (isPlaying) e.preventDefault(); });
 
         const touchJumpBtn = document.getElementById('touch-jump-btn');
         const touchDashBtn = document.getElementById('touch-dash-btn');
 
-        touchJumpBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            justJumped = true;
-        });
-        touchDashBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            isTouchDashing = true;
-        });
-        touchDashBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            isTouchDashing = false;
-        });
+        touchJumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); justJumped = true; });
+        touchDashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isTouchDashing = true; });
+        touchDashBtn.addEventListener('touchend', (e) => { e.preventDefault(); isTouchDashing = false; });
 
         window.addEventListener('keydown', (e) => {
+            if (!e.key) return;
             const k = e.key.toLowerCase();
             if (keys.hasOwnProperty(k)) keys[k] = true;
             if (e.key === 'Shift') keys.shift = true;
@@ -1235,6 +1231,7 @@
         });
 
         window.addEventListener('keyup', (e) => {
+            if (!e.key) return;
             const k = e.key.toLowerCase();
             if (keys.hasOwnProperty(k)) keys[k] = false;
             if (e.key === 'Shift') keys.shift = false;
@@ -1251,21 +1248,17 @@
 
             let dx = moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
             let dz = -moveX * Math.sin(yaw) + moveZ * Math.cos(yaw);
-
             let len = Math.hypot(dx, dz);
             if (len > 0) { dx /= len; dz /= len; }
 
             if (isTouchDevice && len === 0 && (isTouchDashing || justJumped)) {
-                dx = -Math.sin(yaw);
-                dz = -Math.cos(yaw);
+                dx = -Math.sin(yaw); dz = -Math.cos(yaw);
             }
 
             const dashPressed = keys.shift || mouseRightClickDash || isTouchDashing;
 
             if (isSinglePlayer) {
-                if (localGameState.players[myId]) {
-                    localGameState.players[myId].input = { dx, dz, jump: justJumped, dash: dashPressed };
-                }
+                if (localGameState.players[myId]) localGameState.players[myId].input = { dx, dz, jump: justJumped, dash: dashPressed };
             } else if (currentRoom) {
                 socket.emit('player_input', { dx, dz, jump: justJumped, dash: dashPressed });
             }
@@ -1276,15 +1269,11 @@
             const listDiv = document.getElementById('leaderboard-list');
             if (!gameState.players) return;
 
-            const playersArr = Object.keys(gameState.players).map(id => {
-                return { id: id, ...gameState.players[id] };
-            });
+            const playersArr = Object.keys(gameState.players).map(id => ({ id: id, ...gameState.players[id] }));
             playersArr.sort((a, b) => b.radius - a.radius);
 
-            const topPlayers = playersArr.slice(0, 5);
             let html = '';
-
-            topPlayers.forEach((p, index) => {
+            playersArr.slice(0, 5).forEach((p, index) => {
                 const isMe = p.id === myId;
                 const rowStyle = isMe ? 'background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);' : '';
                 const displayName = p.name || '無名氏';
@@ -1304,10 +1293,7 @@
         }
 
         socket.on('update_game_state', (state) => {
-            if (!isSinglePlayer) {
-                gameState = state;
-                updateLeaderboard(); 
-            }
+            if (!isSinglePlayer) { gameState = state; updateLeaderboard(); }
         });
 
         function animate() {
@@ -1315,23 +1301,17 @@
             if (!isPlaying) return;
 
             const currentPlayers = {};
-            
             if (gameState.players) {
                 for (let id in gameState.players) {
                     currentPlayers[id] = true;
                     const p = gameState.players[id];
                     
                     if (!meshes.players[id]) {
-                        const mat = new THREE.MeshStandardMaterial({ 
-                            color: p.color, roughness: 0.7, metalness: 0.1, map: ballPattern
-                        });
+                        const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.7, metalness: 0.1, map: ballPattern });
                         const mesh = new THREE.Mesh(baseSphereGeo, mat);
-                        mesh.castShadow = true;
-                        mesh.receiveShadow = true;
-                        scene.add(mesh);
-                        meshes.players[id] = mesh;
+                        mesh.castShadow = true; mesh.receiveShadow = true;
+                        scene.add(mesh); meshes.players[id] = mesh;
                     }
-                    
                     if (!nameTagsDOM[id]) {
                         const tag = document.createElement('div');
                         tag.className = 'name-tag';
@@ -1343,18 +1323,11 @@
                     if (id === myId) nameTagsDOM[id].style.color = '#38bdf8'; 
                     
                     const mesh = meshes.players[id];
-                    
-                    const targetX = p.x || 0;
-                    const targetY = p.y || 20;
-                    const targetZ = p.z || 0;
+                    const stepX = ((p.x || 0) - mesh.position.x) * 0.2;
+                    const stepY = ((p.y || 20) - mesh.position.y) * 0.2;
+                    const stepZ = ((p.z || 0) - mesh.position.z) * 0.2;
 
-                    const stepX = (targetX - mesh.position.x) * 0.2;
-                    const stepY = (targetY - mesh.position.y) * 0.2;
-                    const stepZ = (targetZ - mesh.position.z) * 0.2;
-
-                    mesh.position.x += stepX;
-                    mesh.position.y += stepY;
-                    mesh.position.z += stepZ;
+                    mesh.position.x += stepX; mesh.position.y += stepY; mesh.position.z += stepZ;
                     
                     const targetScale = p.radius || 20;
                     const currentRadius = mesh.scale.x || 1; 
@@ -1362,114 +1335,84 @@
                     const distance = Math.hypot(stepX, stepZ);
                     if (distance > 0.05) {
                         const angle = distance / currentRadius;
-                        const axis = new THREE.Vector3(stepZ, 0, -stepX).normalize();
-                        mesh.rotateOnWorldAxis(axis, angle);
+                        mesh.rotateOnWorldAxis(new THREE.Vector3(stepZ, 0, -stepX).normalize(), angle);
                     }
 
                     mesh.scale.x += (targetScale - mesh.scale.x) * 0.1;
                     mesh.scale.y += (targetScale - mesh.scale.y) * 0.1;
                     mesh.scale.z += (targetScale - mesh.scale.z) * 0.1;
 
-                    if (p.damageEffect > 0) {
-                        mesh.material.emissive.setHex(0xff0000); 
-                        mesh.material.emissiveIntensity = 0.8; 
-                    } else if (p.boostEffect > 0) {
-                        mesh.material.emissive.setHex(0x06b6d4); 
-                        mesh.material.emissiveIntensity = 0.6 + Math.sin(Date.now() * 0.02) * 0.4;
-                    } else {
-                        mesh.material.emissive.setHex(0x000000); 
-                    }
+                    if (p.damageEffect > 0) { mesh.material.emissive.setHex(0xff0000); mesh.material.emissiveIntensity = 0.8; } 
+                    else if (p.boostEffect > 0) { mesh.material.emissive.setHex(0x06b6d4); mesh.material.emissiveIntensity = 0.6 + Math.sin(Date.now() * 0.02) * 0.4; } 
+                    else { mesh.material.emissive.setHex(0x000000); }
 
                     const tagPos = mesh.position.clone();
-                    tagPos.y += currentRadius + 8; 
-                    tagPos.project(camera); 
+                    tagPos.y += currentRadius + 8; tagPos.project(camera); 
 
                     if (tagPos.z < 1) { 
-                        const screenX = (tagPos.x * 0.5 + 0.5) * window.innerWidth;
-                        const screenY = (tagPos.y * -0.5 + 0.5) * window.innerHeight;
-                        nameTagsDOM[id].style.left = `${screenX}px`;
-                        nameTagsDOM[id].style.top = `${screenY}px`;
+                        nameTagsDOM[id].style.left = `${(tagPos.x * 0.5 + 0.5) * window.innerWidth}px`;
+                        nameTagsDOM[id].style.top = `${(tagPos.y * -0.5 + 0.5) * window.innerHeight}px`;
                         nameTagsDOM[id].style.opacity = '1';
-                    } else {
-                        nameTagsDOM[id].style.opacity = '0'; 
-                    }
+                    } else { nameTagsDOM[id].style.opacity = '0'; }
 
                     if (id === myId) {
                         const cameraDistance = 150 + p.radius * 2.8; 
-                        
                         const cx = mesh.position.x + cameraDistance * Math.sin(yaw) * Math.cos(pitch);
                         const cy = mesh.position.y + cameraDistance * Math.sin(pitch) + p.radius * 1.5; 
                         const cz = mesh.position.z + cameraDistance * Math.cos(yaw) * Math.cos(pitch);
 
-                        camera.position.set(cx, cy, cz); 
-                        
-                        const minCamY = Math.max(3, p.radius * 0.4);
-                        if (camera.position.y < minCamY) camera.position.y = minCamY;
-                        
+                        camera.position.set(cx, Math.max(3, p.radius * 0.4, cy), cz); 
                         camera.lookAt(mesh.position);
-
-                        scene.fog.near = cameraDistance + 200;  
-                        scene.fog.far = cameraDistance + 1500; 
+                        scene.fog.near = cameraDistance + 200; scene.fog.far = cameraDistance + 1500; 
                     }
                 }
             }
 
             for (let id in meshes.players) {
                 if (!currentPlayers[id]) {
-                    scene.remove(meshes.players[id]);
-                    meshes.players[id].material.dispose();
-                    delete meshes.players[id];
-                    
-                    if (nameTagsDOM[id]) {
-                        nameTagsDOM[id].remove();
-                        delete nameTagsDOM[id];
-                    }
+                    scene.remove(meshes.players[id]); meshes.players[id].material.dispose(); delete meshes.players[id];
+                    if (nameTagsDOM[id]) { nameTagsDOM[id].remove(); delete nameTagsDOM[id]; }
                 }
             }
 
             if (gameState.spikes) {
                 while (meshes.spikes.length < gameState.spikes.length) {
                     const mesh = new THREE.Mesh(spikeGeo, spikeMat);
-                    mesh.position.y = 20; 
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                    scene.add(mesh);
-                    meshes.spikes.push(mesh);
+                    mesh.position.y = 20; mesh.castShadow = true; mesh.receiveShadow = true;
+                    scene.add(mesh); meshes.spikes.push(mesh);
+                }
+                while (meshes.spikes.length > gameState.spikes.length) {
+                    const mesh = meshes.spikes.pop(); scene.remove(mesh);
                 }
                 for (let i = 0; i < gameState.spikes.length; i++) {
-                    meshes.spikes[i].position.x = gameState.spikes[i].x;
-                    meshes.spikes[i].position.z = gameState.spikes[i].z;
+                    meshes.spikes[i].position.set(gameState.spikes[i].x, 20, gameState.spikes[i].z);
                 }
             }
             
             if (gameState.boostPads) {
                 while (meshes.boostPads.length < gameState.boostPads.length) {
                     const mesh = new THREE.Mesh(boostPadGeo, boostPadMat);
-                    mesh.position.y = 0.5; 
-                    mesh.receiveShadow = true;
-                    scene.add(mesh);
-                    meshes.boostPads.push(mesh);
+                    mesh.position.y = 0.5; mesh.receiveShadow = true;
+                    scene.add(mesh); meshes.boostPads.push(mesh);
+                }
+                while (meshes.boostPads.length > gameState.boostPads.length) {
+                    const mesh = meshes.boostPads.pop(); scene.remove(mesh);
                 }
                 for (let i = 0; i < gameState.boostPads.length; i++) {
-                    meshes.boostPads[i].position.x = gameState.boostPads[i].x;
-                    meshes.boostPads[i].position.z = gameState.boostPads[i].z;
+                    meshes.boostPads[i].position.set(gameState.boostPads[i].x, 0.5, gameState.boostPads[i].z);
                 }
             }
 
             if (gameState.pellets) {
                 while (meshes.pellets.length < gameState.pellets.length) {
                     const mesh = new THREE.Mesh(pelletGeo, pelletMat);
-                    mesh.scale.set(4, 4, 4);
-                    scene.add(mesh);
-                    meshes.pellets.push(mesh);
+                    mesh.scale.set(4, 4, 4); scene.add(mesh); meshes.pellets.push(mesh);
                 }
                 while (meshes.pellets.length > gameState.pellets.length) {
-                    const mesh = meshes.pellets.pop();
-                    scene.remove(mesh);
+                    const mesh = meshes.pellets.pop(); scene.remove(mesh);
                 }
                 for (let i = 0; i < gameState.pellets.length; i++) {
-                    const p = gameState.pellets[i];
-                    meshes.pellets[i].position.set(p.x, p.y || 4, p.z); 
+                    meshes.pellets[i].position.set(gameState.pellets[i].x, gameState.pellets[i].y || 4, gameState.pellets[i].z); 
                 }
             }
 

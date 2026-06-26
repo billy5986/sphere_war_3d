@@ -280,7 +280,7 @@
             user-select: none; -webkit-user-select: none;
             transition: background 0.1s, transform 0.1s;
         }
-        .touch-btn:active {
+        .touch-btn:active, .touch-btn.active {
             background: rgba(56, 189, 248, 0.5); border-color: #38bdf8;
             transform: scale(0.9);
         }
@@ -329,6 +329,7 @@
     <div id="crosshair"></div>
     <div id="instruction" class="hidden">點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | Shift 鍵 衝刺</div>
     <div id="conveyor-warning">⚠️ 推力方向即將改變 ⚠️</div>
+    <div id="reverse-indicator" style="display: none; position: absolute; top: 120px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.8); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; pointer-events: none; z-index: 10;">⚠️ 方向反轉 ⚠️</div>
 
     <div id="touch-controls">
         <div id="touch-dash-btn" class="touch-btn">⚡ 衝刺</div>
@@ -418,14 +419,39 @@
 
             <div class="control-label"><span>尖刺數量</span><span id="mp-spike-count-val">15</span></div>
             <input type="range" id="mp-spike-count-slider" min="0" max="150" value="15">
+            
+            <div class="control-label"><span>尖刺扣除體積 (%)</span><span id="mp-spike-damage-val">20</span></div>
+            <input type="range" id="mp-spike-damage-slider" min="0" max="100" step="5" value="20">
 
             <div class="control-label"><span>加速帶數量</span><span id="mp-boost-count-val">8</span></div>
             <input type="range" id="mp-boost-count-slider" min="0" max="60" value="8">
+
+            <div class="control-label"><span>加速帶推力</span><span id="mp-boost-power-val">45</span></div>
+            <input type="range" id="mp-boost-power-slider" min="10" max="150" step="5" value="45">
             
             <div class="control-label"><span>基礎衝擊力</span><span id="mp-base-force-val">15</span></div>
             <input type="range" id="mp-base-force-slider" min="5" max="50" value="15">
             
-            <div class="magma-setting-group">
+            <div class="control-label"><span>全域操作反向 (所有人)</span></div>
+            <select id="mp-global-reverse-select" style="margin-bottom: 20px;">
+                <option value="false">關閉 (正常操作)</option>
+                <option value="true">開啟 (方向完全相反)</option>
+            </select>
+            
+            <div class="conveyor-setting-group" style="display: none;">
+                <div class="control-label"><span>輸送帶推力</span><span id="mp-conveyor-force-val">0.5</span></div>
+                <input type="range" id="mp-conveyor-force-slider" min="0.1" max="5.0" step="0.1" value="0.5">
+                
+                <div class="control-label"><span>切換方向間隔 (秒)</span><span id="mp-conveyor-time-val">30</span></div>
+                <input type="range" id="mp-conveyor-time-slider" min="5" max="60" step="1" value="30">
+            </div>
+
+            <div class="ice-setting-group" style="display: none;">
+                <div class="control-label"><span>冰原滑行程度 (摩擦力)</span><span id="mp-ice-friction-val">0.97</span></div>
+                <input type="range" id="mp-ice-friction-slider" min="0.85" max="0.99" step="0.01" value="0.97">
+            </div>
+            
+            <div class="magma-setting-group" style="display: none;">
                 <div class="control-label"><span>岩漿殘留秒數</span><span id="mp-magma-burn-val">5</span></div>
                 <input type="range" id="mp-magma-burn-slider" min="0" max="15" value="5">
                 
@@ -480,14 +506,39 @@
 
             <div class="control-label"><span>尖刺數量</span><span id="spike-count-val">15</span></div>
             <input type="range" id="spike-count-slider" min="0" max="150" value="15">
+            
+            <div class="control-label"><span>尖刺扣除體積 (%)</span><span id="spike-damage-val">20</span></div>
+            <input type="range" id="spike-damage-slider" min="0" max="100" step="5" value="20">
 
             <div class="control-label"><span>加速帶數量</span><span id="boost-count-val">8</span></div>
             <input type="range" id="boost-count-slider" min="0" max="60" value="8">
+
+            <div class="control-label"><span>加速帶推力</span><span id="boost-power-val">45</span></div>
+            <input type="range" id="boost-power-slider" min="10" max="150" step="5" value="45">
             
             <div class="control-label"><span>基礎衝擊力</span><span id="base-force-val">15</span></div>
             <input type="range" id="base-force-slider" min="5" max="50" value="15">
             
-            <div class="magma-setting-group">
+            <div class="control-label"><span>全域操作反向 (單機)</span></div>
+            <select id="global-reverse-select" style="margin-bottom: 20px;">
+                <option value="false">關閉 (正常操作)</option>
+                <option value="true">開啟 (方向完全相反)</option>
+            </select>
+            
+            <div class="conveyor-setting-group" style="display: none;">
+                <div class="control-label"><span>輸送帶推力</span><span id="conveyor-force-val">0.5</span></div>
+                <input type="range" id="conveyor-force-slider" min="0.1" max="5.0" step="0.1" value="0.5">
+                
+                <div class="control-label"><span>切換方向間隔 (秒)</span><span id="conveyor-time-val">30</span></div>
+                <input type="range" id="conveyor-time-slider" min="5" max="60" step="1" value="30">
+            </div>
+
+            <div class="ice-setting-group" style="display: none;">
+                <div class="control-label"><span>冰原滑行程度 (摩擦力)</span><span id="ice-friction-val">0.97</span></div>
+                <input type="range" id="ice-friction-slider" min="0.85" max="0.99" step="0.01" value="0.97">
+            </div>
+
+            <div class="magma-setting-group" style="display: none;">
                 <div class="control-label"><span>岩漿殘留秒數</span><span id="magma-burn-val">5</span></div>
                 <input type="range" id="magma-burn-slider" min="0" max="15" value="5">
                 
@@ -783,7 +834,8 @@
             // 處理向量推力地圖的邏輯
             let currentConveyorForce = { x: 0, z: 0 };
             if (selectedMapType === 'conveyor') {
-                if (now - lastConveyorSwitchTime >= CONVEYOR_CYCLE_MS) {
+                let switchMs = (localGameState.conveyorSwitchTime || 30) * 1000;
+                if (now - lastConveyorSwitchTime >= switchMs) {
                     // 切換方向，確保不和當前方向相同
                     let nextDir;
                     do { nextDir = Math.floor(Math.random() * 4); } while (nextDir === currentConveyorDirIndex);
@@ -791,7 +843,7 @@
                     lastConveyorSwitchTime = now;
                     conveyorIsWarning = false;
                     document.getElementById('conveyor-warning').style.display = 'none';
-                } else if (now - lastConveyorSwitchTime >= CONVEYOR_CYCLE_MS - 3000) {
+                } else if (now - lastConveyorSwitchTime >= switchMs - 3000) {
                     // 切換前3秒發出預警
                     if (!conveyorIsWarning) {
                         conveyorIsWarning = true;
@@ -800,8 +852,9 @@
                 }
                 
                 let dirObj = conveyorDirections[currentConveyorDirIndex];
-                currentConveyorForce.x = dirObj.x * CONVEYOR_FORCE;
-                currentConveyorForce.z = dirObj.z * CONVEYOR_FORCE;
+                let conveyorForce = localGameState.conveyorForce || 0.5;
+                currentConveyorForce.x = dirObj.x * conveyorForce;
+                currentConveyorForce.z = dirObj.z * conveyorForce;
             }
 
             let leaderId = null;
@@ -908,8 +961,9 @@
                                 if (id === myId) { bx = -Math.sin(yaw); bz = -Math.cos(yaw); } 
                                 else { let angle = Math.random() * Math.PI * 2; bx = Math.cos(angle); bz = Math.sin(angle); }
                             }
-                            let boostForce = selectedMapType === 'ice' ? 18 : 45;
-                            p.vx += bx * boostForce; p.vz += bz * boostForce;
+                            let bForce = localGameState.boostForce || 45;
+                            p.vx += bx * bForce; 
+                            p.vz += bz * bForce;
                             p.boostCooldown = 90; p.boostEffect = 15;   
                         }
                     }
@@ -935,7 +989,9 @@
                 }
 
                 let isIce = selectedMapType === 'ice';
-                let friction = (isIce && p.isGrounded) ? 0.97 : 0.85;
+                let baseFriction = 0.85;
+                let iceFriction = localGameState.iceFriction || 0.97;
+                let friction = (isIce && p.isGrounded) ? iceFriction : baseFriction;
                 
                 // 計算基礎玩家移動向量
                 let playerMoveX, playerMoveZ;
@@ -1004,7 +1060,8 @@
                         p.x += nx * overlap; p.z += nz * overlap;
 
                         if (p.radius > 40) { 
-                            let lostEnergy = (p.radius - 20) * 0.2; 
+                            let dmgPercent = localGameState.spikeDamage !== undefined ? localGameState.spikeDamage : 20;
+                            let lostEnergy = (p.radius - 20) * (dmgPercent / 100); 
                             p.radius -= lostEnergy;
                             p.vy = 20; p.vx += nx * 35; p.vz += nz * 35;
                             p.damageEffect = 15;
@@ -1204,9 +1261,22 @@
             mapSelectPanel.classList.add('hidden');
             selectedMapType = MapTypes[currentMapSelectIndex].id;
             
-            const displayStyle = selectedMapType === 'magma' ? 'block' : 'none';
-            document.querySelectorAll('.magma-setting-group').forEach(el => el.style.display = displayStyle);
+            document.querySelectorAll('.magma-setting-group').forEach(el => el.style.display = selectedMapType === 'magma' ? 'block' : 'none');
+            document.querySelectorAll('.conveyor-setting-group').forEach(el => el.style.display = selectedMapType === 'conveyor' ? 'block' : 'none');
+            document.querySelectorAll('.ice-setting-group').forEach(el => el.style.display = selectedMapType === 'ice' ? 'block' : 'none');
             
+            if (selectedMapType === 'ice') {
+                document.getElementById('boost-power-slider').value = 18;
+                document.getElementById('boost-power-val').innerText = '18';
+                document.getElementById('mp-boost-power-slider').value = 18;
+                document.getElementById('mp-boost-power-val').innerText = '18';
+            } else {
+                document.getElementById('boost-power-slider').value = 45;
+                document.getElementById('boost-power-val').innerText = '45';
+                document.getElementById('mp-boost-power-slider').value = 45;
+                document.getElementById('mp-boost-power-val').innerText = '45';
+            }
+
             if (isSinglePlayer) {
                 spSettingsPanel.classList.remove('hidden');
             } else {
@@ -1274,6 +1344,10 @@
         const spikeCountVal = document.getElementById('spike-count-val');
         spikeCountSlider.oninput = (e) => spikeCountVal.innerText = e.target.value;
 
+        const spikeDamageSlider = document.getElementById('spike-damage-slider');
+        const spikeDamageVal = document.getElementById('spike-damage-val');
+        if (spikeDamageSlider) spikeDamageSlider.oninput = (e) => spikeDamageVal.innerText = e.target.value;
+
         const baseForceSlider = document.getElementById('base-force-slider');
         const baseForceVal = document.getElementById('base-force-val');
         baseForceSlider.oninput = (e) => baseForceVal.innerText = e.target.value;
@@ -1281,6 +1355,10 @@
         const boostCountSlider = document.getElementById('boost-count-slider');
         const boostCountVal = document.getElementById('boost-count-val');
         boostCountSlider.oninput = (e) => boostCountVal.innerText = e.target.value;
+
+        const boostPowerSlider = document.getElementById('boost-power-slider');
+        const boostPowerVal = document.getElementById('boost-power-val');
+        if (boostPowerSlider) boostPowerSlider.oninput = (e) => boostPowerVal.innerText = e.target.value;
 
         const magmaBurnSlider = document.getElementById('magma-burn-slider');
         const magmaBurnVal = document.getElementById('magma-burn-val');
@@ -1292,7 +1370,19 @@
 
         const magmaSizeSlider = document.getElementById('magma-size-slider');
         const magmaSizeVal = document.getElementById('magma-size-val');
-        magmaSizeSlider.oninput = (e) => magmaSizeVal.innerText = e.target.value;
+        if (magmaSizeSlider) magmaSizeSlider.oninput = (e) => magmaSizeVal.innerText = e.target.value;
+
+        const conveyorForceSlider = document.getElementById('conveyor-force-slider');
+        const conveyorForceVal = document.getElementById('conveyor-force-val');
+        if (conveyorForceSlider) conveyorForceSlider.oninput = (e) => conveyorForceVal.innerText = e.target.value;
+
+        const conveyorTimeSlider = document.getElementById('conveyor-time-slider');
+        const conveyorTimeVal = document.getElementById('conveyor-time-val');
+        if (conveyorTimeSlider) conveyorTimeSlider.oninput = (e) => conveyorTimeVal.innerText = e.target.value;
+
+        const iceFrictionSlider = document.getElementById('ice-friction-slider');
+        const iceFrictionVal = document.getElementById('ice-friction-val');
+        if (iceFrictionSlider) iceFrictionSlider.oninput = (e) => iceFrictionVal.innerText = e.target.value;
 
         // 多人參數滑塊連動
         const mpMapSizeSlider = document.getElementById('mp-map-size-slider');
@@ -1307,6 +1397,10 @@
         const mpSpikeCountVal = document.getElementById('mp-spike-count-val');
         mpSpikeCountSlider.oninput = (e) => mpSpikeCountVal.innerText = e.target.value;
 
+        const mpSpikeDamageSlider = document.getElementById('mp-spike-damage-slider');
+        const mpSpikeDamageVal = document.getElementById('mp-spike-damage-val');
+        if (mpSpikeDamageSlider) mpSpikeDamageSlider.oninput = (e) => mpSpikeDamageVal.innerText = e.target.value;
+
         const mpBaseForceSlider = document.getElementById('mp-base-force-slider');
         const mpBaseForceVal = document.getElementById('mp-base-force-val');
         mpBaseForceSlider.oninput = (e) => mpBaseForceVal.innerText = e.target.value;
@@ -1314,6 +1408,10 @@
         const mpBoostCountSlider = document.getElementById('mp-boost-count-slider');
         const mpBoostCountVal = document.getElementById('mp-boost-count-val');
         mpBoostCountSlider.oninput = (e) => mpBoostCountVal.innerText = e.target.value;
+
+        const mpBoostPowerSlider = document.getElementById('mp-boost-power-slider');
+        const mpBoostPowerVal = document.getElementById('mp-boost-power-val');
+        if (mpBoostPowerSlider) mpBoostPowerSlider.oninput = (e) => mpBoostPowerVal.innerText = e.target.value;
 
         const mpMagmaBurnSlider = document.getElementById('mp-magma-burn-slider');
         const mpMagmaBurnVal = document.getElementById('mp-magma-burn-val');
@@ -1325,7 +1423,19 @@
 
         const mpMagmaSizeSlider = document.getElementById('mp-magma-size-slider');
         const mpMagmaSizeVal = document.getElementById('mp-magma-size-val');
-        mpMagmaSizeSlider.oninput = (e) => mpMagmaSizeVal.innerText = e.target.value;
+        if (mpMagmaSizeSlider) mpMagmaSizeSlider.oninput = (e) => mpMagmaSizeVal.innerText = e.target.value;
+
+        const mpConveyorForceSlider = document.getElementById('mp-conveyor-force-slider');
+        const mpConveyorForceVal = document.getElementById('mp-conveyor-force-val');
+        if (mpConveyorForceSlider) mpConveyorForceSlider.oninput = (e) => mpConveyorForceVal.innerText = e.target.value;
+
+        const mpConveyorTimeSlider = document.getElementById('mp-conveyor-time-slider');
+        const mpConveyorTimeVal = document.getElementById('mp-conveyor-time-val');
+        if (mpConveyorTimeSlider) mpConveyorTimeSlider.oninput = (e) => mpConveyorTimeVal.innerText = e.target.value;
+
+        const mpIceFrictionSlider = document.getElementById('mp-ice-friction-slider');
+        const mpIceFrictionVal = document.getElementById('mp-ice-friction-val');
+        if (mpIceFrictionSlider) mpIceFrictionSlider.oninput = (e) => mpIceFrictionVal.innerText = e.target.value;
 
         // 單人設定 -> 下一步 / 返回
         document.getElementById('btn-sp-settings-next').onclick = () => {
@@ -1343,6 +1453,12 @@
             localGameState = { players: {}, pellets: [], spikes: [], boostPads: [], magmas: [] };
             
             localGameState.baseImpactForce = parseInt(document.getElementById('base-force-slider').value) || 15;
+            localGameState.boostForce = parseInt(document.getElementById('boost-power-slider').value) || 45;
+            localGameState.spikeDamage = parseInt(document.getElementById('spike-damage-slider').value) !== NaN ? parseInt(document.getElementById('spike-damage-slider').value) : 20;
+            localGameState.globalReverse = document.getElementById('global-reverse-select').value === 'true';
+            localGameState.conveyorForce = parseFloat(document.getElementById('conveyor-force-slider').value) || 0.5;
+            localGameState.conveyorSwitchTime = parseInt(document.getElementById('conveyor-time-slider').value) || 30;
+            localGameState.iceFriction = parseFloat(document.getElementById('ice-friction-slider').value) || 0.97;
             
             const pName = document.getElementById('name-input').value.trim() || '玩家1號';
             const pColor = document.getElementById('color-input').value;
@@ -1424,8 +1540,14 @@
                 mapSize: parseInt(mpMapSizeSlider.value),
                 pelletCount: parseInt(mpPelletCountSlider.value),
                 spikeCount: parseInt(mpSpikeCountSlider.value),
+                spikeDamage: parseInt(mpSpikeDamageSlider.value) !== NaN ? parseInt(mpSpikeDamageSlider.value) : 20,
                 boostCount: parseInt(mpBoostCountSlider.value),
+                boostForce: parseInt(mpBoostPowerSlider.value),
+                globalReverse: document.getElementById('mp-global-reverse-select').value === 'true',
                 baseImpactForce: parseInt(mpBaseForceSlider.value),
+                conveyorForce: parseFloat(mpConveyorForceSlider.value),
+                conveyorSwitchTime: parseInt(mpConveyorTimeSlider.value),
+                iceFriction: parseFloat(mpIceFrictionSlider.value),
                 magmaCount: parseInt(mpMagmaCountSlider.value),
                 magmaSize: parseInt(mpMagmaSizeSlider.value),
                 mapType: selectedMapType 
@@ -1649,6 +1771,14 @@
             if (keys.s) moveZ += 1;
             if (keys.a) moveX -= 1;
             if (keys.d) moveX += 1;
+            
+            let isReversed = isSinglePlayer ? (localGameState.globalReverse === true) : (gameState.globalReverse === true);
+            document.getElementById('reverse-indicator').style.display = isReversed ? 'block' : 'none';
+            
+            if (isReversed) {
+                moveX *= -1;
+                moveZ *= -1;
+            }
 
             let dx = moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
             let dz = -moveX * Math.sin(yaw) + moveZ * Math.cos(yaw);

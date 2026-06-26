@@ -94,6 +94,37 @@
         .menu-card h3 { margin: 0 0 8px 0; font-size: 1.15rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 8px; position: relative; z-index: 2; }
         .menu-card p { margin: 0 0 16px 0; font-size: 0.9rem; color: #94a3b8; line-height: 1.5; position: relative; z-index: 2; }
         
+        /* 地圖選擇器專用樣式 */
+        .map-preview-container { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .map-btn { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; flex-shrink: 0;
+            width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.2s; font-size: 1.2rem;
+        }
+        .map-btn:hover { background: rgba(56, 189, 248, 0.3); border-color: #38bdf8; transform: scale(1.1); }
+        .map-display { width: 100%; text-align: center; margin-bottom: 20px; }
+        .map-preview-box {
+            flex: 1; height: 120px; border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1); overflow: hidden; position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8); transition: all 0.3s;
+        }
+        /* 模擬一般地圖預覽 */
+        .preview-normal { background: #1e293b; background-image: linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px); background-size: 20px 20px; }
+        /* 模擬輸送帶地圖預覽 - 使用與遊戲內相同的 SVG 箭頭資料 */
+        .preview-conveyor { 
+            background-color: #0f766e; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpolygon points='128,40 200,140 160,140 160,220 96,220 96,140 56,140' fill='%2314b8a6'/%3E%3C/svg%3E");
+            background-size: 40px 40px;
+            animation: conveyorFlow 1s linear infinite;
+        }
+        @keyframes conveyorFlow { 
+            0% { background-position: 0 0; } 
+            100% { background-position: 0 -40px; } 
+        }
+        
+        .map-name { font-size: 1.3rem; font-weight: 800; color: #38bdf8; margin-bottom: 5px; }
+        .map-desc { font-size: 0.85rem; color: #cbd5e1; line-height: 1.4; height: 40px; }
+
         .divider { 
             display: flex; align-items: center; text-align: center; color: #475569; 
             font-size: 0.8rem; margin: 25px 0; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; 
@@ -199,6 +230,12 @@
             text-shadow: 0 2px 5px rgba(0,0,0,0.9); pointer-events: none; transition: all 0.3s ease;
             font-weight: 600; font-size: 1.05rem; letter-spacing: 1px; padding: 0 20px; box-sizing: border-box;
         }
+        
+        #conveyor-warning {
+            position: absolute; top: 70px; width: 100%; text-align: center; color: #ef4444; z-index: 5;
+            font-weight: 800; font-size: 1.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+            display: none; animation: pulse 0.5s infinite; letter-spacing: 2px;
+        }
 
         #name-tags-container {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -277,6 +314,7 @@
 
     <div id="crosshair"></div>
     <div id="instruction" class="hidden">點擊畫面鎖定視角 | WASD 移動 | 空白鍵 跳躍 | Shift 鍵 衝刺</div>
+    <div id="conveyor-warning">⚠️ 推力方向即將改變 ⚠️</div>
 
     <div id="touch-controls">
         <div id="touch-dash-btn" class="touch-btn">⚡ 衝刺</div>
@@ -303,6 +341,27 @@
                     <p>離線與 AI 機器人進行大亂鬥，鍛鍊你的技巧。</p>
                     <button id="btn-show-singleplayer" class="success">進入單人模式</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 地圖選擇面板 -->
+        <div id="map-select-panel" class="panel hidden">
+            <h1 class="game-title" style="font-size: 2.2rem;">選擇地圖</h1>
+            <div class="game-subtitle" style="margin-bottom: 20px;">Select Map</div>
+            
+            <div class="map-display">
+                <div class="map-preview-container">
+                    <button id="btn-prev-map" class="map-btn">◀</button>
+                    <div id="map-preview-ui" class="map-preview-box preview-normal"></div>
+                    <button id="btn-next-map" class="map-btn">▶</button>
+                </div>
+                <div id="map-name-ui" class="map-name">一般地圖</div>
+                <div id="map-desc-ui" class="map-desc">標準的競技場地，沒有額外的干擾，純粹的實力對決。</div>
+            </div>
+
+            <div class="menu-grid" style="margin-top: 25px;">
+                <button id="btn-map-next" class="success">確認地圖</button>
+                <button id="btn-map-back" class="danger">返回</button>
             </div>
         </div>
 
@@ -348,7 +407,7 @@
             
             <div class="menu-grid" style="margin-top: 25px;">
                 <button id="btn-mp-settings-create" class="primary">創建並進入</button>
-                <button id="btn-mp-settings-back" class="danger">返回</button>
+                <button id="btn-mp-settings-back" class="danger">重新選擇地圖</button>
             </div>
         </div>
 
@@ -400,7 +459,7 @@
             
             <div class="menu-grid" style="margin-top: 15px;">
                 <button id="btn-sp-settings-next" class="success">下一步</button>
-                <button id="btn-sp-settings-back" class="danger">返回主選單</button>
+                <button id="btn-sp-settings-back" class="danger">重新選擇地圖</button>
             </div>
         </div>
 
@@ -415,8 +474,9 @@
                    💥 <b>碰撞：</b>體型大於對手 10% 即可將其撞開！<br>
                    ⚔️ <b>反擊：</b>小球使用「衝刺」撞擊沒衝刺的大球，也能產生衝擊力將大球推開！<br>
                    🔵 <b>加速陣：</b>踏上藍色光陣會瞬間向前強烈衝刺，期間撞擊力大幅提升！<br>
-                   🔴 <b>紅刺：</b>實體障礙物。巨球的夢魘！體積過大時撞到紅色尖刺會<b>瞬間損失 20% 能量</b>並被強烈彈開！<br>
-                   ⚡ <b>衝刺：</b>按 <b>Shift</b> / <b>右鍵</b> 加速。體積越大衝刺消耗越快、加速效果越差。<br>
+                   🔴 <b>紅刺：</b>實體障礙物。撞到紅色尖刺會<b>瞬間損失 20% 能量</b>並被強烈彈開！<br>
+                   ⚡ <b>衝刺：</b>按 <b>Shift</b> / <b>右鍵</b> 加速。體積越大衝刺消耗越快。<br>
+                   🔄 <b>地圖特效：</b>若選擇「輸送帶地圖」，地板每30秒改變推力方向，順向加速、逆向減速！
                 </p>
                 <div class="divider" style="margin: 15px 0;">操作</div>
                 
@@ -476,6 +536,27 @@
         const backendUrl = 'https://sphere-war.onrender.com';
         const socket = io(backendUrl, { autoConnect: true });
 
+        // --- 地圖系統設計 ---
+        const MapTypes = [
+            { id: 'normal', name: '一般地圖', desc: '標準的競技場地，沒有額外的干擾，純粹的實力對決。', class: 'preview-normal' },
+            { id: 'conveyor', name: '向量推力 (輸送帶)', desc: '地板為持續運作的區域推力場！每30秒改變推力方向。順著箭頭可疊加移動速度，逆著箭頭則會產生強烈阻力。', class: 'preview-conveyor' }
+        ];
+        let currentMapSelectIndex = 0;
+        let selectedMapType = 'normal';
+
+        // 向量推力變數
+        const conveyorDirections = [
+            { x: 1, z: 0, rot: -Math.PI/2 },   // 0: Right
+            { x: 0, z: 1, rot: Math.PI },      // 1: Down
+            { x: -1, z: 0, rot: Math.PI/2 },   // 2: Left
+            { x: 0, z: -1, rot: 0 }            // 3: Up
+        ];
+        let currentConveyorDirIndex = 0;
+        let lastConveyorSwitchTime = 0;
+        let conveyorIsWarning = false;
+        const CONVEYOR_CYCLE_MS = 30000;
+        const CONVEYOR_FORCE = 4.5;
+
         // --- Three.js 初始化 ---
         const canvas = document.getElementById('gameCanvas');
         const scene = new THREE.Scene();
@@ -500,10 +581,37 @@
         dirLight.shadow.camera.right = 400;
         scene.add(dirLight);
 
-        let worldSize = 800; // 地圖邊界大小 (動態)
+        let worldSize = 800;
         
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-        let ground = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), groundMat);
+        // 生成一般地板材質
+        const normalGroundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+        
+        // 動態生成輸送帶箭頭貼圖
+        const arrowTexCanvas = document.createElement('canvas');
+        arrowTexCanvas.width = 256; arrowTexCanvas.height = 256;
+        const actx = arrowTexCanvas.getContext('2d');
+        actx.fillStyle = '#0f766e'; // 背景色
+        actx.fillRect(0, 0, 256, 256);
+        actx.fillStyle = '#14b8a6'; // 箭頭顏色
+        actx.beginPath();
+        // 畫一個朝上的箭頭 (rot=0 時朝上)
+        actx.moveTo(128, 40);
+        actx.lineTo(200, 140);
+        actx.lineTo(160, 140);
+        actx.lineTo(160, 220);
+        actx.lineTo(96, 220);
+        actx.lineTo(96, 140);
+        actx.lineTo(56, 140);
+        actx.closePath();
+        actx.fill();
+        const conveyorPattern = new THREE.CanvasTexture(arrowTexCanvas);
+        conveyorPattern.wrapS = THREE.RepeatWrapping; conveyorPattern.wrapT = THREE.RepeatWrapping;
+        // 材質設定
+        const conveyorGroundMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, roughness: 0.6, map: conveyorPattern 
+        });
+
+        let ground = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), normalGroundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
@@ -512,31 +620,35 @@
         gridHelper.position.y = 0.1;
         scene.add(gridHelper);
 
-        function updateWorldSize(size) {
+        function updateWorldSize(size, mapType = 'normal') {
+            selectedMapType = mapType;
             if (ground) {
                 ground.geometry.dispose();
                 ground.geometry = new THREE.PlaneGeometry(size * 2, size * 2);
+                
+                // 根據地圖類型切換材質
+                if (mapType === 'conveyor') {
+                    ground.material = conveyorGroundMat;
+                    conveyorPattern.repeat.set(size / 100, size / 100);
+                    conveyorGroundMat.map.rotation = conveyorDirections[currentConveyorDirIndex].rot;
+                    // 因為旋轉了，中心點偏移設定
+                    conveyorGroundMat.map.center.set(0.5, 0.5);
+                } else {
+                    ground.material = normalGroundMat;
+                }
             }
             if (gridHelper) {
                 scene.remove(gridHelper);
                 gridHelper.geometry.dispose();
                 gridHelper.material.dispose();
             }
-            const divisions = Math.max(10, Math.floor(size / 13)); 
-            gridHelper = new THREE.GridHelper(size * 2, divisions, 0x334155, 0x1e293b);
-            gridHelper.position.y = 0.1;
-            scene.add(gridHelper);
+            if (mapType === 'normal') {
+                const divisions = Math.max(10, Math.floor(size / 13)); 
+                gridHelper = new THREE.GridHelper(size * 2, divisions, 0x334155, 0x1e293b);
+                gridHelper.position.y = 0.1;
+                scene.add(gridHelper);
+            }
         }
-
-        const baseSphereGeo = new THREE.SphereGeometry(1, 32, 32); 
-        const pelletGeo = new THREE.SphereGeometry(1, 8, 8);       
-        const pelletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-        const spikeGeo = new THREE.ConeGeometry(15, 40, 16);
-        const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.4, metalness: 0.5 });
-        const boostPadGeo = new THREE.CylinderGeometry(25, 25, 1, 32);
-        const boostPadMat = new THREE.MeshStandardMaterial({ 
-            color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.6, transparent: true, opacity: 0.8 
-        });
 
         // 動態生成球體紋理
         const ballTexCanvas = document.createElement('canvas');
@@ -560,6 +672,16 @@
         ballPattern.wrapS = THREE.RepeatWrapping; ballPattern.wrapT = THREE.RepeatWrapping;
         ballPattern.repeat.set(4, 2); 
 
+        const baseSphereGeo = new THREE.SphereGeometry(1, 32, 32); 
+        const pelletGeo = new THREE.SphereGeometry(1, 8, 8);       
+        const pelletMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const spikeGeo = new THREE.ConeGeometry(15, 40, 16);
+        const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.4, metalness: 0.5 });
+        const boostPadGeo = new THREE.CylinderGeometry(25, 25, 1, 32);
+        const boostPadMat = new THREE.MeshStandardMaterial({ 
+            color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.6, transparent: true, opacity: 0.8 
+        });
+
         // --- 狀態管理 ---
         const SPIKE_RADIUS = 15; 
         let gameState = { players: {}, pellets: [], spikes: [], boostPads: [] };
@@ -580,6 +702,31 @@
             let spikes = localGameState.spikes;
             let boostPads = localGameState.boostPads;
             let difficultyLevel = parseInt(document.getElementById('npc-difficulty-select').value);
+            let now = Date.now();
+
+            // 處理向量推力地圖的邏輯
+            let currentConveyorForce = { x: 0, z: 0 };
+            if (selectedMapType === 'conveyor') {
+                if (now - lastConveyorSwitchTime >= CONVEYOR_CYCLE_MS) {
+                    // 切換方向，確保不和當前方向相同
+                    let nextDir;
+                    do { nextDir = Math.floor(Math.random() * 4); } while (nextDir === currentConveyorDirIndex);
+                    currentConveyorDirIndex = nextDir;
+                    lastConveyorSwitchTime = now;
+                    conveyorIsWarning = false;
+                    document.getElementById('conveyor-warning').style.display = 'none';
+                } else if (now - lastConveyorSwitchTime >= CONVEYOR_CYCLE_MS - 3000) {
+                    // 切換前3秒發出預警
+                    if (!conveyorIsWarning) {
+                        conveyorIsWarning = true;
+                        document.getElementById('conveyor-warning').style.display = 'block';
+                    }
+                }
+                
+                let dirObj = conveyorDirections[currentConveyorDirIndex];
+                currentConveyorForce.x = dirObj.x * CONVEYOR_FORCE;
+                currentConveyorForce.z = dirObj.z * CONVEYOR_FORCE;
+            }
 
             let leaderId = null;
             let maxRadius = -Infinity;
@@ -607,12 +754,9 @@
                 if (leaderId && id !== leaderId) {
                     let leader = players[leaderId];
                     let distToLeader = Math.hypot(p.x - leader.x, p.z - leader.z);
-
                     let gangUpProb = (difficultyLevel === 3) ? 0.85 : (difficultyLevel === 2 ? 0.50 : 0.15); 
-
                     if (Math.random() < gangUpProb || distToLeader < 300) {
-                        targetX = leader.x;
-                        targetZ = leader.z;
+                        targetX = leader.x; targetZ = leader.z;
                         if (difficultyLevel === 3 && distToLeader < 250 && p.radius > 20) wantsToDash = true;
                     }
                 }
@@ -622,10 +766,8 @@
                     for(let i=0; i<spikes.length; i++) {
                         let d = Math.hypot(p.x - spikes[i].x, p.z - spikes[i].z);
                         if (d < p.radius + 60) {
-                            targetX = p.x + (p.x - spikes[i].x);
-                            targetZ = p.z + (p.z - spikes[i].z);
-                            avoidingSpike = true;
-                            break;
+                            targetX = p.x + (p.x - spikes[i].x); targetZ = p.z + (p.z - spikes[i].z);
+                            avoidingSpike = true; break;
                         }
                     }
                 }
@@ -635,6 +777,11 @@
                 }
 
                 if (targetX !== null && targetZ !== null) {
+                    // AI 需要考慮地板推力的抵抗 (簡單的預測補償)
+                    if (selectedMapType === 'conveyor' && difficultyLevel >= 2) {
+                        targetX -= currentConveyorForce.x * 20;
+                        targetZ -= currentConveyorForce.z * 20;
+                    }
                     let angle = Math.atan2(targetZ - p.z, targetX - p.x);
                     if (difficultyLevel === 1) angle += (Math.random() - 0.5) * 0.4; 
                     p.input.dx = Math.cos(angle); 
@@ -689,8 +836,23 @@
 
                 if (isDashing) { p.radius -= dashCost; if (p.radius < 20) p.radius = 20; }
 
-                p.x += input.dx * speed + p.vx; 
-                p.z += input.dz * speed + p.vz;
+                // 計算基礎玩家移動向量
+                let playerMoveX = input.dx * speed + p.vx;
+                let playerMoveZ = input.dz * speed + p.vz;
+                
+                // 結合環境向量推力 (若在空中則受推力影響較小)
+                let environmentForceX = 0;
+                let environmentForceZ = 0;
+                if (selectedMapType === 'conveyor') {
+                    let forceMulti = p.isGrounded ? 1.0 : 0.3; // 空中受力減弱
+                    environmentForceX = currentConveyorForce.x * forceMulti;
+                    environmentForceZ = currentConveyorForce.z * forceMulti;
+                }
+
+                // 物理疊加: 完美詮釋「順向增幅 / 逆向減阻」
+                p.x += playerMoveX + environmentForceX; 
+                p.z += playerMoveZ + environmentForceZ;
+                
                 p.vx *= 0.85; p.vz *= 0.85;
                 if (Math.abs(p.vx) < 0.1) p.vx = 0;
                 if (Math.abs(p.vz) < 0.1) p.vz = 0;
@@ -811,6 +973,7 @@
 
         const uiLayer = document.getElementById('ui-layer');
         const mainMenuPanel = document.getElementById('main-menu-panel');
+        const mapSelectPanel = document.getElementById('map-select-panel');
         const multiplayerPanel = document.getElementById('multiplayer-panel');
         const mpSettingsPanel = document.getElementById('mp-settings-panel');
         const colorPanel = document.getElementById('color-panel');
@@ -836,7 +999,7 @@
 
         let currentRoom = null;
         let myId = null;
-        let isHost = false; // 新增：用來判斷玩家是否為房主
+        let isHost = false; 
         let isPlaying = false;
         let isSinglePlayer = false;
         let spGameLoopInterval = null;
@@ -870,6 +1033,25 @@
             statusText.innerText = text;
         }
 
+        // --- 地圖選擇 UI 事件 ---
+        function renderMapSelectUI() {
+            const map = MapTypes[currentMapSelectIndex];
+            document.getElementById('map-name-ui').innerText = map.name;
+            document.getElementById('map-desc-ui').innerText = map.desc;
+            const previewBox = document.getElementById('map-preview-ui');
+            previewBox.className = 'map-preview-box ' + map.class;
+        }
+
+        document.getElementById('btn-prev-map').onclick = () => {
+            currentMapSelectIndex = (currentMapSelectIndex - 1 + MapTypes.length) % MapTypes.length;
+            renderMapSelectUI();
+        };
+
+        document.getElementById('btn-next-map').onclick = () => {
+            currentMapSelectIndex = (currentMapSelectIndex + 1) % MapTypes.length;
+            renderMapSelectUI();
+        };
+
         // --- 面板切換事件 ---
         document.getElementById('btn-show-multiplayer').onclick = () => {
             mainMenuPanel.classList.add('hidden');
@@ -881,11 +1063,42 @@
             mainMenuPanel.classList.remove('hidden');
         };
 
+        // 單人模式進入 -> 先選地圖
         document.getElementById('btn-show-singleplayer').onclick = () => {
             isSinglePlayer = true;
             mainMenuPanel.classList.add('hidden');
-            spSettingsPanel.classList.remove('hidden'); // 單人模式先顯示設定面板
-            roomInfoContainer.style.display = 'none'; // 單人不顯示房間代碼
+            mapSelectPanel.classList.remove('hidden');
+            roomInfoContainer.style.display = 'none'; 
+            renderMapSelectUI();
+        };
+
+        // 多人模式創建房間 -> 先選地圖
+        document.getElementById('btn-create-room').onclick = () => { 
+            isSinglePlayer = false;
+            multiplayerPanel.classList.add('hidden');
+            mapSelectPanel.classList.remove('hidden');
+            renderMapSelectUI();
+        };
+
+        // 確認地圖後的分流
+        document.getElementById('btn-map-next').onclick = () => {
+            mapSelectPanel.classList.add('hidden');
+            selectedMapType = MapTypes[currentMapSelectIndex].id;
+            
+            if (isSinglePlayer) {
+                spSettingsPanel.classList.remove('hidden');
+            } else {
+                mpSettingsPanel.classList.remove('hidden');
+            }
+        };
+
+        document.getElementById('btn-map-back').onclick = () => {
+            mapSelectPanel.classList.add('hidden');
+            if (isSinglePlayer) {
+                mainMenuPanel.classList.remove('hidden');
+            } else {
+                multiplayerPanel.classList.remove('hidden');
+            }
         };
 
         // 外觀設定 -> 下一步
@@ -901,7 +1114,7 @@
             
             if (isSinglePlayer) {
                 colorPanel.classList.add('hidden');
-                tutorialPanel.classList.remove('hidden'); // 單人模式設定完外觀直接進教學
+                tutorialPanel.classList.remove('hidden'); 
             } else {
                 socket.emit('check_availability', { roomId: currentRoom, color: color, name: name });
             }
@@ -911,13 +1124,13 @@
         document.getElementById('btn-color-back').onclick = () => {
             colorPanel.classList.add('hidden');
             if (isSinglePlayer) {
-                spSettingsPanel.classList.remove('hidden'); // 單人模式返回到單人設定
+                spSettingsPanel.classList.remove('hidden'); 
             } else {
-                socket.emit('leave_room'); // 通知後端退出房間流程
+                socket.emit('leave_room'); 
                 if (isHost) {
-                    mpSettingsPanel.classList.remove('hidden'); // 房主返回到房間設定
+                    mpSettingsPanel.classList.remove('hidden'); 
                 } else {
-                    multiplayerPanel.classList.remove('hidden'); // 訪客返回到多人主選單
+                    multiplayerPanel.classList.remove('hidden'); 
                 }
             }
         };
@@ -955,12 +1168,12 @@
         // 單人設定 -> 下一步 / 返回
         document.getElementById('btn-sp-settings-next').onclick = () => {
             spSettingsPanel.classList.add('hidden');
-            colorPanel.classList.remove('hidden'); // 前往外觀設定
+            colorPanel.classList.remove('hidden'); 
         };
 
         document.getElementById('btn-sp-settings-back').onclick = () => {
             spSettingsPanel.classList.add('hidden');
-            mainMenuPanel.classList.remove('hidden'); // 返回主選單
+            mapSelectPanel.classList.remove('hidden'); // 返回地圖選擇
         };
 
         function initSinglePlayer() {
@@ -972,7 +1185,14 @@
             const npcCount = parseInt(npcCountSlider.value);
             
             worldSize = parseInt(mapSizeSlider.value);
-            updateWorldSize(worldSize);
+            updateWorldSize(worldSize, selectedMapType);
+
+            // 初始化輸送帶方向
+            if (selectedMapType === 'conveyor') {
+                currentConveyorDirIndex = Math.floor(Math.random() * 4);
+                lastConveyorSwitchTime = Date.now();
+                conveyorGroundMat.map.rotation = conveyorDirections[currentConveyorDirIndex].rot;
+            }
             
             localGameState.players[myId] = createLocalPlayer(pName, pColor);
             
@@ -1020,28 +1240,30 @@
             };
         }
 
-        document.getElementById('btn-create-room').onclick = () => { 
-            multiplayerPanel.classList.add('hidden');
-            mpSettingsPanel.classList.remove('hidden');
-        };
-
+        // 多人房主設定確認
         document.getElementById('btn-mp-settings-create').onclick = () => {
-            isHost = true; // 標記為房主
+            isHost = true; 
             const config = {
                 mapSize: parseInt(mpMapSizeSlider.value),
                 spikeCount: parseInt(mpSpikeCountSlider.value),
-                boostCount: parseInt(mpBoostCountSlider.value)
+                boostCount: parseInt(mpBoostCountSlider.value),
+                mapType: selectedMapType // 傳送地圖類型給後端
             };
             socket.emit('create_room', config);
+            
+            if (selectedMapType === 'conveyor') {
+                showToast('注意：多人模式下輸送帶功能需伺服器端支援物理計算才可生效。');
+            }
         };
 
         document.getElementById('btn-mp-settings-back').onclick = () => {
             mpSettingsPanel.classList.add('hidden');
-            multiplayerPanel.classList.remove('hidden');
+            mapSelectPanel.classList.remove('hidden'); // 返回選地圖
         };
 
+        // 多人訪客加入
         document.getElementById('btn-join-room').onclick = () => {
-            isHost = false; // 標記為訪客
+            isHost = false; 
             const code = document.getElementById('room-input').value.trim();
             if (code) socket.emit('join_room', code);
         };
@@ -1049,16 +1271,17 @@
         socket.on('room_joined', (data) => {
             isSinglePlayer = false;
             
-            // 兼容舊版字串與新版物件回傳
             if (typeof data === 'object') {
                 currentRoom = data.roomId;
                 worldSize = data.mapSize || 800;
+                selectedMapType = data.mapType || 'normal'; // 接收後端的地圖設定
             } else {
                 currentRoom = data;
-                worldSize = 800; // 預設防呆
+                worldSize = 800; 
+                selectedMapType = 'normal';
             }
             
-            updateWorldSize(worldSize); // 根據伺服器傳來的地圖大小重繪網格
+            updateWorldSize(worldSize, selectedMapType); 
 
             multiplayerPanel.classList.add('hidden');
             mpSettingsPanel.classList.add('hidden');
@@ -1296,9 +1519,36 @@
             if (!isSinglePlayer) { gameState = state; updateLeaderboard(); }
         });
 
+        // 渲染動畫迴圈
         function animate() {
             requestAnimationFrame(animate);
             if (!isPlaying) return;
+
+            // 輸送帶地圖的材質動畫：箭頭流動與平滑轉向
+            if (selectedMapType === 'conveyor' && ground && ground.material.map) {
+                // 流動特效 (UV offset)
+                ground.material.map.offset.y -= 0.015;
+                
+                // 警報狀態閃爍變紅
+                if (conveyorIsWarning) {
+                    let pulse = Math.abs(Math.sin(Date.now() * 0.01));
+                    ground.material.color.setHex(pulse > 0.5 ? 0xff4444 : 0xffffff);
+                } else {
+                    ground.material.color.setHex(0xffffff);
+                }
+
+                // 平滑轉向邏輯
+                let targetRot = conveyorDirections[currentConveyorDirIndex].rot;
+                let currentRot = ground.material.map.rotation;
+                let diff = targetRot - currentRot;
+                // 正規化角度差異至 -PI ~ PI
+                while(diff < -Math.PI) diff += Math.PI * 2;
+                while(diff > Math.PI) diff -= Math.PI * 2;
+                
+                if (Math.abs(diff) > 0.01) {
+                    ground.material.map.rotation += diff * 0.08; // 平滑過渡
+                }
+            }
 
             const currentPlayers = {};
             if (gameState.players) {

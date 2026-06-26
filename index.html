@@ -413,11 +413,17 @@
             <div class="control-label"><span>地圖大小</span><span id="mp-map-size-val">800</span></div>
             <input type="range" id="mp-map-size-slider" min="400" max="2000" step="100" value="800">
 
+            <div class="control-label"><span>能量點數量</span><span id="mp-pellet-count-val">50</span></div>
+            <input type="range" id="mp-pellet-count-slider" min="10" max="200" value="50">
+
             <div class="control-label"><span>尖刺數量</span><span id="mp-spike-count-val">15</span></div>
             <input type="range" id="mp-spike-count-slider" min="0" max="150" value="15">
 
             <div class="control-label"><span>加速帶數量</span><span id="mp-boost-count-val">8</span></div>
             <input type="range" id="mp-boost-count-slider" min="0" max="60" value="8">
+            
+            <div class="control-label"><span>基礎衝擊力</span><span id="mp-base-force-val">15</span></div>
+            <input type="range" id="mp-base-force-slider" min="5" max="50" value="15">
             
             <div class="magma-setting-group">
                 <div class="control-label"><span>岩漿殘留秒數</span><span id="mp-magma-burn-val">5</span></div>
@@ -466,6 +472,9 @@
             <div class="control-label"><span>地圖大小</span><span id="map-size-val">800</span></div>
             <input type="range" id="map-size-slider" min="400" max="2000" step="100" value="800">
 
+            <div class="control-label"><span>能量點數量</span><span id="pellet-count-val">50</span></div>
+            <input type="range" id="pellet-count-slider" min="10" max="200" value="50">
+
             <div class="control-label"><span>NPC 數量</span><span id="npc-count-val">15</span></div>
             <input type="range" id="npc-count-slider" min="1" max="50" value="15">
 
@@ -474,6 +483,9 @@
 
             <div class="control-label"><span>加速帶數量</span><span id="boost-count-val">8</span></div>
             <input type="range" id="boost-count-slider" min="0" max="60" value="8">
+            
+            <div class="control-label"><span>基礎衝擊力</span><span id="base-force-val">15</span></div>
+            <input type="range" id="base-force-slider" min="5" max="50" value="15">
             
             <div class="magma-setting-group">
                 <div class="control-label"><span>岩漿殘留秒數</span><span id="magma-burn-val">5</span></div>
@@ -969,8 +981,10 @@
                 let p = players[id];
                 for (let i = pellets.length - 1; i >= 0; i--) {
                     if (Math.hypot(p.x - pellets[i].x, p.y - pellets[i].y, p.z - pellets[i].z) < p.radius + 15) {
-                        pellets.splice(i, 1); p.radius += 1;             
-                        pellets.push({ x: (Math.random() - 0.5) * worldSize * 2, y: 4, z: (Math.random() - 0.5) * worldSize * 2 });
+                        pellets.splice(i, 1); p.radius += 1;
+                        if (localGameState.maxPellets && pellets.length < localGameState.maxPellets) {
+                            pellets.push({ x: (Math.random() - 0.5) * worldSize * 2, y: 4, z: (Math.random() - 0.5) * worldSize * 2 });
+                        }
                     }
                 }
             }
@@ -1023,8 +1037,8 @@
                         let hnx = hDist > 0 ? dx / hDist : 1;
                         let hnz = hDist > 0 ? dz / hDist : 0;
 
-                        let baseForce1 = 15; 
-                        let baseForce2 = 15;
+                        let baseForce1 = localGameState.baseImpactForce || 15; 
+                        let baseForce2 = localGameState.baseImpactForce || 15;
                         
                         if (selectedMapType === 'ice') {
                             baseForce1 += Math.hypot(p1.vx, p1.vz) * 0.8;
@@ -1252,9 +1266,17 @@
         const npcCountVal = document.getElementById('npc-count-val');
         npcCountSlider.oninput = (e) => npcCountVal.innerText = e.target.value;
 
+        const pelletCountSlider = document.getElementById('pellet-count-slider');
+        const pelletCountVal = document.getElementById('pellet-count-val');
+        pelletCountSlider.oninput = (e) => pelletCountVal.innerText = e.target.value;
+
         const spikeCountSlider = document.getElementById('spike-count-slider');
         const spikeCountVal = document.getElementById('spike-count-val');
         spikeCountSlider.oninput = (e) => spikeCountVal.innerText = e.target.value;
+
+        const baseForceSlider = document.getElementById('base-force-slider');
+        const baseForceVal = document.getElementById('base-force-val');
+        baseForceSlider.oninput = (e) => baseForceVal.innerText = e.target.value;
 
         const boostCountSlider = document.getElementById('boost-count-slider');
         const boostCountVal = document.getElementById('boost-count-val');
@@ -1277,9 +1299,17 @@
         const mpMapSizeVal = document.getElementById('mp-map-size-val');
         mpMapSizeSlider.oninput = (e) => mpMapSizeVal.innerText = e.target.value;
 
+        const mpPelletCountSlider = document.getElementById('mp-pellet-count-slider');
+        const mpPelletCountVal = document.getElementById('mp-pellet-count-val');
+        mpPelletCountSlider.oninput = (e) => mpPelletCountVal.innerText = e.target.value;
+
         const mpSpikeCountSlider = document.getElementById('mp-spike-count-slider');
         const mpSpikeCountVal = document.getElementById('mp-spike-count-val');
         mpSpikeCountSlider.oninput = (e) => mpSpikeCountVal.innerText = e.target.value;
+
+        const mpBaseForceSlider = document.getElementById('mp-base-force-slider');
+        const mpBaseForceVal = document.getElementById('mp-base-force-val');
+        mpBaseForceSlider.oninput = (e) => mpBaseForceVal.innerText = e.target.value;
 
         const mpBoostCountSlider = document.getElementById('mp-boost-count-slider');
         const mpBoostCountVal = document.getElementById('mp-boost-count-val');
@@ -1312,6 +1342,8 @@
             myId = myId || 'SP_PLAYER_' + Math.random().toString(36).substr(2, 5);
             localGameState = { players: {}, pellets: [], spikes: [], boostPads: [], magmas: [] };
             
+            localGameState.baseImpactForce = parseInt(document.getElementById('base-force-slider').value) || 15;
+            
             const pName = document.getElementById('name-input').value.trim() || '玩家1號';
             const pColor = document.getElementById('color-input').value;
             const npcCount = parseInt(npcCountSlider.value);
@@ -1335,7 +1367,8 @@
                 localGameState.players['BOT_' + i] = createLocalPlayer(bName, bColor);
             }
 
-            const pelletCount = 50 + (npcCount * 5) + Math.floor(worldSize / 100);
+            const pelletCount = parseInt(document.getElementById('pellet-count-slider').value) || 50;
+            localGameState.maxPellets = pelletCount;
             for(let i=0; i<pelletCount; i++) {
                 localGameState.pellets.push({ 
                     x: (Math.random() - 0.5) * worldSize * 2, y: 4, z: (Math.random() - 0.5) * worldSize * 2 
@@ -1389,8 +1422,10 @@
             isHost = true; 
             const config = {
                 mapSize: parseInt(mpMapSizeSlider.value),
+                pelletCount: parseInt(mpPelletCountSlider.value),
                 spikeCount: parseInt(mpSpikeCountSlider.value),
                 boostCount: parseInt(mpBoostCountSlider.value),
+                baseImpactForce: parseInt(mpBaseForceSlider.value),
                 magmaCount: parseInt(mpMagmaCountSlider.value),
                 magmaSize: parseInt(mpMagmaSizeSlider.value),
                 mapType: selectedMapType 
